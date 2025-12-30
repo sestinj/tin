@@ -50,6 +50,8 @@ func main() {
 		err = commands.Pull(args)
 	case "serve":
 		err = commands.Serve(args)
+	case "config":
+		err = commands.Config(args)
 	case "version", "--version", "-v":
 		fmt.Printf("tin version %s\n", version)
 	case "help", "--help", "-h":
@@ -86,6 +88,7 @@ Remote commands:
   push        Push commits and threads to remote
   pull        Pull commits and threads from remote
   serve       Start a tin server
+  config      View and modify configuration
 
 Options:
   -h, --help     Show this help message
