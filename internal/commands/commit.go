@@ -310,10 +310,12 @@ func formatGitCommitMessage(repo *storage.Repository, tinCommitID string, messag
 		builder.WriteString(restOfMessage)
 	}
 
-	// Always add tin commit URL if available
+	// Always add tin commit URL if available (wrapped in <> for GitHub markdown linking)
 	if commitURL := repo.BuildCommitURL(tinCommitID); commitURL != "" {
 		builder.WriteString("\n\n")
+		builder.WriteString("<")
 		builder.WriteString(commitURL)
+		builder.WriteString(">")
 	}
 
 	return builder.String()
@@ -335,8 +337,8 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 				msg = strings.TrimSpace(msg)
 				msg = strings.ReplaceAll(msg, "\n", " ")
 				// Truncate if too long
-				if len(msg) > 72 {
-					msg = msg[:69] + "..."
+				if len(msg) > 720 {
+					msg = msg[:717] + "..."
 				}
 				return msg
 			}
@@ -354,8 +356,8 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 		if first := thread.FirstHumanMessage(); first != nil {
 			preview := strings.TrimSpace(first.Content)
 			preview = strings.ReplaceAll(preview, "\n", " ")
-			if len(preview) > 30 {
-				preview = preview[:27] + "..."
+			if len(preview) > 300 {
+				preview = preview[:297] + "..."
 			}
 			previews = append(previews, preview)
 		}
@@ -367,8 +369,8 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 
 	// Join previews, but keep total length reasonable
 	result := strings.Join(previews, "; ")
-	if len(result) > 72 {
-		result = result[:69] + "..."
+	if len(result) > 720 {
+		result = result[:717] + "..."
 	}
 	return result
 }
