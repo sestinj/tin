@@ -323,3 +323,22 @@ func (r *Repository) FindThreadsBySessionID(sessionID string) ([]*model.Thread, 
 	// Already sorted by ListThreads (newest first)
 	return matches, nil
 }
+
+// FindChildThreads returns threads that have the given thread as their parent,
+// sorted by start time (newest first)
+func (r *Repository) FindChildThreads(parentThreadID string) ([]*model.Thread, error) {
+	threads, err := r.ListThreads()
+	if err != nil {
+		return nil, err
+	}
+
+	var children []*model.Thread
+	for _, t := range threads {
+		if t.ParentThreadID == parentThreadID {
+			children = append(children, t)
+		}
+	}
+
+	// Already sorted by ListThreads (newest first)
+	return children, nil
+}

@@ -50,11 +50,13 @@ type CommitPageData struct {
 
 // ThreadPageData contains data for the thread detail page
 type ThreadPageData struct {
-	Title       string
-	RepoPath    string
-	RepoName    string
-	Thread      *model.Thread
-	CodeHostURL *git.CodeHostURL
+	Title        string
+	RepoPath     string
+	RepoName     string
+	Thread       *model.Thread
+	ParentThread *model.Thread   // Thread this continues from (if any)
+	ChildThreads []*model.Thread // Threads that continue from this one
+	CodeHostURL  *git.CodeHostURL
 }
 
 // handleIndex handles the landing page showing all repositories
@@ -238,6 +240,15 @@ func (s *WebServer) handleThread(w http.ResponseWriter, r *http.Request, repoPat
 		return
 	}
 
+	// Load parent thread if this is a continuation
+	var parentThread *model.Thread
+	if thread.ParentThreadID != "" {
+		parentThread, _ = repo.LoadThread(thread.ParentThreadID)
+	}
+
+	// Find any threads that continue from this one
+	childThreads, _ := repo.FindChildThreads(thread.ID)
+
 	// Try to detect code host URL from config or git remote
 	var codeHostURL *git.CodeHostURL
 	if remoteURL := repo.GetCodeHostURL(); remoteURL != "" {
@@ -245,11 +256,13 @@ func (s *WebServer) handleThread(w http.ResponseWriter, r *http.Request, repoPat
 	}
 
 	data := ThreadPageData{
-		Title:       "Thread " + threadID[:7],
-		RepoPath:    repoPath,
-		RepoName:    filepath.Base(repoPath),
-		Thread:      thread,
-		CodeHostURL: codeHostURL,
+		Title:        "Thread " + threadID[:7],
+		RepoPath:     repoPath,
+		RepoName:     filepath.Base(repoPath),
+		Thread:       thread,
+		ParentThread: parentThread,
+		ChildThreads: childThreads,
+		CodeHostURL:  codeHostURL,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

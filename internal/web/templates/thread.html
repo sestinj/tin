@@ -19,6 +19,18 @@
 
     <h2>Thread <code>{{shortID .Thread.ID}}</code></h2>
 
+    {{if .ParentThread}}
+    <div class="thread-continuation continues-from">
+        <span class="continuation-label">Continues from:</span>
+        <a href="/repo/{{$.RepoPath}}/thread/{{.ParentThread.ID}}">
+            <code>{{shortID .ParentThread.ID}}</code>
+        </a>
+        {{if .ParentThread.Messages}}
+        <span class="continuation-preview">{{truncate (index .ParentThread.Messages 0).Content 50}}</span>
+        {{end}}
+    </div>
+    {{end}}
+
     <dl class="metadata">
         <dt>Agent</dt>
         <dd>{{.Thread.Agent}}</dd>
@@ -31,6 +43,20 @@
         <dd>{{.Thread.Status}}</dd>
         {{end}}
     </dl>
+
+    {{if .ChildThreads}}
+    <div class="thread-continuation continued-in">
+        <span class="continuation-label">Continued in:</span>
+        {{range .ChildThreads}}
+        <a href="/repo/{{$.RepoPath}}/thread/{{.ID}}" class="continuation-link">
+            <code>{{shortID .ID}}</code>
+            {{if .Messages}}
+            <span class="continuation-preview">{{truncate (index .Messages 0).Content 40}}</span>
+            {{end}}
+        </a>
+        {{end}}
+    </div>
+    {{end}}
 
     <div class="thread">
         {{range .Thread.Messages}}
