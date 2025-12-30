@@ -25,7 +25,10 @@
         <dt>Date</dt>
         <dd>{{formatTime .Commit.Timestamp}}</dd>
         <dt>Git Commit</dt>
-        <dd><code>{{.Commit.GitCommitHash}}</code></dd>
+        <dd>
+            {{$url := commitURL .CodeHostURL .Commit.GitCommitHash}}
+            {{if $url}}<a href="{{$url}}" target="_blank"><code>{{.Commit.GitCommitHash}}</code></a>{{else}}<code>{{.Commit.GitCommitHash}}</code>{{end}}
+        </dd>
         {{if .Commit.Author}}
         <dt>Author</dt>
         <dd>{{.Commit.Author}}</dd>
@@ -60,7 +63,10 @@
             </div>
             {{end}}
             {{if .GitHashAfter}}
-            <div class="git-state">Git state: <code>{{shortID .GitHashAfter}}</code></div>
+            <div class="git-state">Git state:
+                {{$gitUrl := commitURL $.CodeHostURL .GitHashAfter}}
+                {{if $gitUrl}}<a href="{{$gitUrl}}" target="_blank"><code>{{shortID .GitHashAfter}}</code></a>{{else}}<code>{{shortID .GitHashAfter}}</code>{{end}}
+            </div>
             {{end}}
         </div>
         {{end}}

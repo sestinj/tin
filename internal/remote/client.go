@@ -160,6 +160,76 @@ func (c *Client) Push(repo *storage.Repository, branch string, force bool) error
 	return nil
 }
 
+// GetConfig retrieves the remote repository's config
+func (c *Client) GetConfig() (*ConfigMessage, error) {
+	// Send hello
+	hello := HelloMessage{
+		Version:   ProtocolVersion,
+		Operation: "config",
+		RepoPath:  c.url.Path,
+	}
+	if err := c.pc.Send(MsgHello, hello); err != nil {
+		return nil, fmt.Errorf("failed to send hello: %w", err)
+	}
+
+	// Send get-config request
+	if err := c.pc.Send(MsgGetConfig, GetConfigMessage{}); err != nil {
+		return nil, fmt.Errorf("failed to send get-config: %w", err)
+	}
+
+	// Receive config
+	msg, err := c.pc.Receive()
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive config: %w", err)
+	}
+	if msg.Type == MsgError {
+		var errMsg ErrorMessage
+		msg.DecodePayload(&errMsg)
+		return nil, fmt.Errorf("server error: %s", errMsg.Message)
+	}
+	if msg.Type != MsgConfig {
+		return nil, fmt.Errorf("expected config message, got %s", msg.Type)
+	}
+
+	var config ConfigMessage
+	if err := msg.DecodePayload(&config); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	return &config, nil
+}
+
+// SetConfig updates the remote repository's config
+func (c *Client) SetConfig(config *SetConfigMessage) error {
+	// Send hello
+	hello := HelloMessage{
+		Version:   ProtocolVersion,
+		Operation: "config",
+		RepoPath:  c.url.Path,
+	}
+	if err := c.pc.Send(MsgHello, hello); err != nil {
+		return fmt.Errorf("failed to send hello: %w", err)
+	}
+
+	// Send set-config request
+	if err := c.pc.Send(MsgSetConfig, config); err != nil {
+		return fmt.Errorf("failed to send set-config: %w", err)
+	}
+
+	// Receive response
+	msg, err := c.pc.Receive()
+	if err != nil {
+		return fmt.Errorf("failed to receive response: %w", err)
+	}
+	if msg.Type == MsgError {
+		var errMsg ErrorMessage
+		msg.DecodePayload(&errMsg)
+		return fmt.Errorf("server error: %s", errMsg.Message)
+	}
+
+	return nil
+}
+
 // Pull pulls commits and threads from the remote
 func (c *Client) Pull(repo *storage.Repository, branch string) (*RefsMessage, error) {
 	// Send hello

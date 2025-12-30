@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/danieladler/tin/internal/git"
 	"github.com/danieladler/tin/internal/remote"
 	"github.com/danieladler/tin/internal/storage"
 )
@@ -75,6 +77,84 @@ func Push(args []string) error {
 		}
 
 		fmt.Printf("Tin pushed %s -> %s/%s\n", branch, remoteName, branch)
+
+		// Sync code host URL
+		if err := syncCodeHostURL(repo, remoteConfig.URL, remoteName); err != nil {
+			// Non-fatal: just warn
+			fmt.Printf("Warning: failed to sync code host URL: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+// syncCodeHostURL ensures the remote tin repo has the correct code_host_url
+func syncCodeHostURL(repo *storage.Repository, remoteURL, remoteName string) error {
+	// Get local git remote URL
+	localGitURL, err := repo.GetGitRemoteURL(remoteName)
+	if err != nil {
+		return nil // No git remote, nothing to sync
+	}
+
+	// Parse and validate local URL
+	localCodeHost := git.ParseGitRemoteURL(localGitURL)
+	if localCodeHost == nil {
+		return nil // Couldn't parse, nothing to sync
+	}
+	localBaseURL := localCodeHost.BaseURL()
+	if localBaseURL == "" {
+		return nil // Not a supported code host
+	}
+
+	// Connect to remote to check its config
+	configClient, err := remote.Dial(remoteURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect for config sync: %w", err)
+	}
+	defer configClient.Close()
+
+	remoteConfigData, err := configClient.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get remote config: %w", err)
+	}
+
+	// Compare and update
+	if remoteConfigData.CodeHostURL == "" {
+		// Remote has no URL, set it
+		fmt.Printf("Setting remote code_host_url to %s\n", localBaseURL)
+		setClient, err := remote.Dial(remoteURL)
+		if err != nil {
+			return err
+		}
+		defer setClient.Close()
+		return setClient.SetConfig(&remote.SetConfigMessage{CodeHostURL: localBaseURL})
+	}
+
+	if remoteConfigData.CodeHostURL == localBaseURL {
+		// URLs match, nothing to do
+		return nil
+	}
+
+	// URLs differ, prompt user
+	fmt.Printf("\nRemote code_host_url mismatch:\n")
+	fmt.Printf("  Remote: %s\n", remoteConfigData.CodeHostURL)
+	fmt.Printf("  Local:  %s\n", localBaseURL)
+	fmt.Printf("Update remote to match local? [y/N]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	response, _ := reader.ReadString('\n')
+	response = strings.TrimSpace(strings.ToLower(response))
+
+	if response == "y" || response == "yes" {
+		setClient, err := remote.Dial(remoteURL)
+		if err != nil {
+			return err
+		}
+		defer setClient.Close()
+		if err := setClient.SetConfig(&remote.SetConfigMessage{CodeHostURL: localBaseURL}); err != nil {
+			return err
+		}
+		fmt.Printf("Updated remote code_host_url to %s\n", localBaseURL)
 	}
 
 	return nil

@@ -46,7 +46,10 @@
                 </td>
                 <td>{{truncate .Message 60}}</td>
                 <td>{{formatTime .Timestamp}}</td>
-                <td><code>{{shortID .GitCommitHash}}</code></td>
+                <td>
+                    {{$url := commitURL $.CodeHostURL .GitCommitHash}}
+                    {{if $url}}<a href="{{$url}}" target="_blank"><code>{{shortID .GitCommitHash}}</code></a>{{else}}<code>{{shortID .GitCommitHash}}</code>{{end}}
+                </td>
             </tr>
         {{end}}
         </tbody>

@@ -37,8 +37,9 @@ type RemoteConfig struct {
 
 // Config holds tin configuration
 type Config struct {
-	Version int            `json:"version"`
-	Remotes []RemoteConfig `json:"remotes,omitempty"`
+	Version     int            `json:"version"`
+	Remotes     []RemoteConfig `json:"remotes,omitempty"`
+	CodeHostURL string         `json:"code_host_url,omitempty"`
 }
 
 // Index represents the staging area
@@ -306,6 +307,32 @@ func (r *Repository) GitPull(remote, branch string) error {
 		return fmt.Errorf("git pull failed: %s", string(output))
 	}
 	return nil
+}
+
+// GetGitRemoteURL returns the URL of a git remote
+func (r *Repository) GetGitRemoteURL(name string) (string, error) {
+	cmd := exec.Command("git", "remote", "get-url", name)
+	cmd.Dir = r.RootPath
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// GetCodeHostURL returns the code host URL, checking config first then git remote
+func (r *Repository) GetCodeHostURL() string {
+	// Check config first (explicit override)
+	if config, err := r.ReadConfig(); err == nil && config.CodeHostURL != "" {
+		return config.CodeHostURL
+	}
+	// Fall back to git remote (only works for non-bare repos)
+	if !r.IsBare {
+		if url, err := r.GetGitRemoteURL("origin"); err == nil {
+			return url
+		}
+	}
+	return ""
 }
 
 // InitBare initializes a bare tin repository (no git, no working tree)

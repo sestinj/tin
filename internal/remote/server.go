@@ -140,6 +140,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 		s.handlePush(pc, repo, remoteAddr)
 	case "pull":
 		s.handlePull(pc, repo, remoteAddr)
+	case "config":
+		s.handleConfig(pc, repo, remoteAddr)
 	default:
 		pc.SendError(ErrCodeInvalidRequest, "unknown operation: "+hello.Operation)
 	}
@@ -409,4 +411,56 @@ func isAncestor(repo *storage.Repository, ancestorID, commitID string) bool {
 	}
 
 	return false
+}
+
+func (s *Server) handleConfig(pc *ProtocolConn, repo *storage.Repository, remoteAddr string) {
+	// Read config message (get or set)
+	msg, err := pc.Receive()
+	if err != nil {
+		log.Printf("[%s] failed to receive config message: %v", remoteAddr, err)
+		return
+	}
+
+	switch msg.Type {
+	case MsgGetConfig:
+		// Send current config
+		config, err := repo.ReadConfig()
+		if err != nil {
+			pc.SendError(ErrCodeInternal, "failed to read config: "+err.Error())
+			return
+		}
+		configMsg := ConfigMessage{
+			CodeHostURL: config.CodeHostURL,
+		}
+		if err := pc.Send(MsgConfig, configMsg); err != nil {
+			log.Printf("[%s] failed to send config: %v", remoteAddr, err)
+		}
+		log.Printf("[%s] sent config", remoteAddr)
+
+	case MsgSetConfig:
+		var setConfig SetConfigMessage
+		if err := msg.DecodePayload(&setConfig); err != nil {
+			pc.SendError(ErrCodeInvalidRequest, "invalid set-config payload")
+			return
+		}
+
+		// Update config
+		config, err := repo.ReadConfig()
+		if err != nil {
+			pc.SendError(ErrCodeInternal, "failed to read config: "+err.Error())
+			return
+		}
+
+		config.CodeHostURL = setConfig.CodeHostURL
+		if err := repo.WriteConfig(config); err != nil {
+			pc.SendError(ErrCodeInternal, "failed to write config: "+err.Error())
+			return
+		}
+
+		pc.SendOK("config updated")
+		log.Printf("[%s] updated code_host_url to %s", remoteAddr, setConfig.CodeHostURL)
+
+	default:
+		pc.SendError(ErrCodeInvalidRequest, "expected get-config or set-config message")
+	}
 }

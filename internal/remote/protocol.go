@@ -21,6 +21,9 @@ const (
 	MsgWant       MessageType = "want"
 	MsgPack       MessageType = "pack"
 	MsgUpdateRefs MessageType = "update-refs"
+	MsgGetConfig  MessageType = "get-config"
+	MsgConfig     MessageType = "config"
+	MsgSetConfig  MessageType = "set-config"
 	MsgOK         MessageType = "ok"
 	MsgError      MessageType = "error"
 )
@@ -62,6 +65,21 @@ type PackMessage struct {
 type UpdateRefsMessage struct {
 	Updates map[string]string `json:"updates"` // branch name -> commit ID
 	Force   bool              `json:"force"`
+}
+
+// GetConfigMessage requests config from remote
+type GetConfigMessage struct {
+	Keys []string `json:"keys,omitempty"` // specific keys to get, empty means all
+}
+
+// ConfigMessage contains config data
+type ConfigMessage struct {
+	CodeHostURL string `json:"code_host_url,omitempty"`
+}
+
+// SetConfigMessage requests config update on remote
+type SetConfigMessage struct {
+	CodeHostURL string `json:"code_host_url,omitempty"`
 }
 
 // OKMessage indicates success

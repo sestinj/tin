@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/danieladler/tin/internal/git"
 	"github.com/danieladler/tin/internal/model"
 )
 
@@ -20,6 +21,7 @@ func init() {
 		"formatTime": formatTime,
 		"roleClass":  roleClass,
 		"truncate":   truncate,
+		"commitURL":  commitURL,
 	}
 
 	templates = template.Must(template.New("").
@@ -61,6 +63,14 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
+}
+
+// commitURL generates a full commit URL if code host is available
+func commitURL(codeHost *git.CodeHostURL, hash string) string {
+	if codeHost == nil || hash == "" {
+		return ""
+	}
+	return codeHost.CommitURL(hash)
 }
 
 // renderTemplate executes a named template with the given data
