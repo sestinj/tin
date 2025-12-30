@@ -234,6 +234,17 @@ func (r *Repository) GitCommit(message string) error {
 	return nil
 }
 
+// GitCommitEmpty creates an empty git commit (no file changes) with the given message
+func (r *Repository) GitCommitEmpty(message string) error {
+	cmd := exec.Command("git", "commit", "--allow-empty", "-m", message)
+	cmd.Dir = r.RootPath
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New("git commit failed: " + string(output))
+	}
+	return nil
+}
+
 // GitHasStagedChanges checks if there are staged changes ready to commit
 func (r *Repository) GitHasStagedChanges() (bool, error) {
 	cmd := exec.Command("git", "diff", "--cached", "--quiet")

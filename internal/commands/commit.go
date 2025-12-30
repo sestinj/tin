@@ -132,13 +132,24 @@ func Commit(args []string) error {
 		return err
 	}
 
-	// Commit any remaining staged git changes
+	// Create git commit with tin commit link
+	// Always create a commit if we have a thread host URL configured,
+	// even if there are no file changes (to record the tin commit link)
 	hasGitChanges, _ := repo.GitHasStagedChanges()
-	if hasGitChanges {
+	commitURL := repo.BuildCommitURL(commit.ID)
+
+	if hasGitChanges || commitURL != "" {
 		gitMsg := formatGitCommitMessage(repo, commit.ID, message)
-		if err := repo.GitCommit(gitMsg); err != nil {
+		var gitErr error
+		if hasGitChanges {
+			gitErr = repo.GitCommit(gitMsg)
+		} else {
+			// No file changes, but we want to record the tin commit link
+			gitErr = repo.GitCommitEmpty(gitMsg)
+		}
+		if gitErr != nil {
 			// Log but don't fail the tin commit
-			fmt.Fprintf(os.Stderr, "Warning: failed to commit git changes: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Warning: failed to commit git changes: %v\n", gitErr)
 		} else {
 			// Update the commit's git hash to the new one
 			newGitHash, _ := repo.GetCurrentGitHash()
@@ -240,34 +251,72 @@ func formatThreadGitMessage(thread *model.Thread) string {
 		shortID = shortID[:8]
 	}
 
-	preview := "thread changes"
+	message := "thread changes"
 	if first := thread.FirstHumanMessage(); first != nil {
-		preview = first.Content
-		if len(preview) > 50 {
-			preview = preview[:47] + "..."
-		}
-		// Replace newlines with spaces for commit message
-		preview = strings.ReplaceAll(preview, "\n", " ")
+		message = strings.TrimSpace(first.Content)
 	}
 
-	return fmt.Sprintf("[tin %s] %s", shortID, preview)
+	// Split into subject line and body
+	firstLine := message
+	restOfMessage := ""
+	if idx := strings.Index(message, "\n"); idx != -1 {
+		firstLine = strings.TrimSpace(message[:idx])
+		restOfMessage = strings.TrimSpace(message[idx+1:])
+	}
+
+	// Build commit message with subject and optional body
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("[tin %s] %s", shortID, firstLine))
+
+	if restOfMessage != "" {
+		builder.WriteString("\n\n")
+		builder.WriteString(restOfMessage)
+	}
+
+	return builder.String()
 }
 
-// formatGitCommitMessage creates a git commit message with optional tin commit link
+// formatGitCommitMessage creates a git commit message with tin commit link
 func formatGitCommitMessage(repo *storage.Repository, tinCommitID string, message string) string {
 	shortID := tinCommitID
 	if len(shortID) > 8 {
 		shortID = shortID[:8]
 	}
 
-	gitMsg := fmt.Sprintf("[tin %s] %s", shortID, truncateCommitMessage(message))
+	// Clean up message - normalize whitespace
+	message = strings.TrimSpace(message)
 
-	// Add tin commit URL if available
-	if commitURL := repo.BuildCommitURL(tinCommitID); commitURL != "" {
-		gitMsg = gitMsg + "\n\n" + commitURL
+	// Build the commit message:
+	// Subject: [tin <id>] <message or first line>
+	// Body: full message if multi-line, plus tin commit URL
+	var builder strings.Builder
+
+	// Subject line
+	firstLine := message
+	restOfMessage := ""
+	if idx := strings.Index(message, "\n"); idx != -1 {
+		firstLine = strings.TrimSpace(message[:idx])
+		restOfMessage = strings.TrimSpace(message[idx+1:])
 	}
 
-	return gitMsg
+	builder.WriteString(fmt.Sprintf("[tin %s] %s", shortID, firstLine))
+
+	// Body section
+	builder.WriteString("\n")
+
+	// Include rest of message if there was more
+	if restOfMessage != "" {
+		builder.WriteString("\n")
+		builder.WriteString(restOfMessage)
+	}
+
+	// Always add tin commit URL if available
+	if commitURL := repo.BuildCommitURL(tinCommitID); commitURL != "" {
+		builder.WriteString("\n\n")
+		builder.WriteString(commitURL)
+	}
+
+	return builder.String()
 }
 
 // generateCommitMessage creates a commit message from staged threads

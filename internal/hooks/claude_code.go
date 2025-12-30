@@ -240,17 +240,29 @@ func formatGitCommitMessage(thread *model.Thread) string {
 		shortID = shortID[:8]
 	}
 
-	preview := "thread completed"
+	message := "thread completed"
 	if first := thread.FirstHumanMessage(); first != nil {
-		preview = first.Content
-		if len(preview) > 50 {
-			preview = preview[:47] + "..."
-		}
-		// Replace newlines with spaces for commit message
-		preview = strings.ReplaceAll(preview, "\n", " ")
+		message = strings.TrimSpace(first.Content)
 	}
 
-	return fmt.Sprintf("[tin %s] %s", shortID, preview)
+	// Split into subject line and body
+	firstLine := message
+	restOfMessage := ""
+	if idx := strings.Index(message, "\n"); idx != -1 {
+		firstLine = strings.TrimSpace(message[:idx])
+		restOfMessage = strings.TrimSpace(message[idx+1:])
+	}
+
+	// Build commit message with subject and optional body
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("[tin %s] %s", shortID, firstLine))
+
+	if restOfMessage != "" {
+		builder.WriteString("\n\n")
+		builder.WriteString(restOfMessage)
+	}
+
+	return builder.String()
 }
 
 // getLatestAssistantResponse reads the transcript and extracts the latest assistant response
