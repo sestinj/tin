@@ -53,6 +53,7 @@ func Commit(args []string) error {
 
 	// For any staged threads without a git commit (still in progress),
 	// create a git commit for their changes now
+	threadCommitCreated := false
 	for _, ref := range staged {
 		thread, err := repo.LoadThread(ref.ThreadID)
 		if err != nil {
@@ -63,6 +64,8 @@ func Commit(args []string) error {
 			// Thread is still in progress - create git commit for its changes
 			if err := commitThreadChanges(repo, thread, ref.MessageCount); err != nil {
 				// Log but don't fail
+			} else {
+				threadCommitCreated = true
 			}
 		}
 	}
@@ -133,12 +136,24 @@ func Commit(args []string) error {
 	}
 
 	// Create git commit with tin commit link
-	// Always create a commit if we have a thread host URL configured,
-	// even if there are no file changes (to record the tin commit link)
+	// Only create if there are actual file changes, or if we need an empty commit
+	// for the URL and we didn't already create a commit via commitThreadChanges
+
+	// Stage any changed files (commitThreadChanges does this for in-progress threads,
+	// but we need to do it here for threads that already had a git hash)
+	if files, err := repo.GitGetChangedFiles(); err == nil && len(files) > 0 {
+		repo.GitAdd(files)
+	}
+
 	hasGitChanges, _ := repo.GitHasStagedChanges()
 	commitURL := repo.BuildCommitURL(commit.ID)
 
-	if hasGitChanges || commitURL != "" {
+	// Create a git commit if:
+	// 1. There are actual staged changes, OR
+	// 2. We have a commit URL AND we didn't already create a commit for thread changes
+	shouldCreateGitCommit := hasGitChanges || (commitURL != "" && !threadCommitCreated)
+
+	if shouldCreateGitCommit {
 		gitMsg := formatGitCommitMessage(repo, commit.ID, message)
 		var gitErr error
 		if hasGitChanges {
