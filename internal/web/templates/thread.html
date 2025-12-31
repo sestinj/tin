@@ -19,6 +19,13 @@
 
     <h2>Thread <code>{{shortID .Thread.ID}}</code></h2>
 
+    {{if and .CurrentVersion (lt (len .Thread.Messages) .LatestCount)}}
+    <div class="version-notice">
+        Viewing version with {{len .Thread.Messages}} of {{.LatestCount}} messages.
+        <a href="/repo/{{.RepoPath}}/thread/{{.Thread.ID}}">View latest version</a>
+    </div>
+    {{end}}
+
     {{if .ParentThread}}
     <div class="thread-continuation continues-from">
         <span class="continuation-label">Continues from:</span>
@@ -85,6 +92,39 @@
 
     {{if not .Thread.Messages}}
     <p class="empty-state">No messages in this thread.</p>
+    {{end}}
+
+    {{if gt (len .Versions) 1}}
+    <div class="versions-section">
+        <h3>Thread Versions</h3>
+        <p class="versions-description">This thread was committed {{len .Versions}} times at different points.</p>
+        <table class="versions-table">
+            <thead>
+                <tr>
+                    <th>Messages</th>
+                    <th>Commit(s)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Versions}}
+                <tr{{if .IsCurrent}} class="current-version"{{end}}>
+                    <td>{{.MessageCount}} messages{{if .IsLatest}} <span class="latest-badge">(latest)</span>{{end}}</td>
+                    <td>
+                        {{range $i, $commit := .Commits}}{{if $i}}, {{end}}<a href="/repo/{{$.RepoPath}}/commit/{{$commit.ID}}"><code>{{shortID $commit.ID}}</code></a>{{end}}
+                    </td>
+                    <td>
+                        {{if .IsCurrent}}
+                        <span class="current-badge">viewing</span>
+                        {{else}}
+                        <a href="/repo/{{$.RepoPath}}/thread/{{$.Thread.ID}}?version={{.ContentHash}}">view</a>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
     {{end}}
 </body>
 </html>

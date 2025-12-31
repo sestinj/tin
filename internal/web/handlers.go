@@ -43,6 +43,9 @@ type ThreadWithContext struct {
 	Thread       *model.Thread
 	ParentThread *model.Thread   // Thread this continues from (if any)
 	ChildThreads []*model.Thread // Threads that continue from this one
+	ContentHash  string          // Content hash of this version (for linking)
+	IsVersioned  bool            // True if this is a specific version (not latest)
+	LatestCount  int             // Message count in the latest version
 }
 
 // CommitPageData contains data for the commit detail page
@@ -55,15 +58,27 @@ type CommitPageData struct {
 	CodeHostURL *git.CodeHostURL
 }
 
+// ThreadVersionInfo describes a version of a thread and which commits reference it
+type ThreadVersionInfo struct {
+	ContentHash  string
+	MessageCount int
+	Commits      []*model.TinCommit
+	IsCurrent    bool // True if this is the currently displayed version
+	IsLatest     bool // True if this is the latest version
+}
+
 // ThreadPageData contains data for the thread detail page
 type ThreadPageData struct {
-	Title        string
-	RepoPath     string
-	RepoName     string
-	Thread       *model.Thread
-	ParentThread *model.Thread   // Thread this continues from (if any)
-	ChildThreads []*model.Thread // Threads that continue from this one
-	CodeHostURL  *git.CodeHostURL
+	Title          string
+	RepoPath       string
+	RepoName       string
+	Thread         *model.Thread
+	ParentThread   *model.Thread   // Thread this continues from (if any)
+	ChildThreads   []*model.Thread // Threads that continue from this one
+	CodeHostURL    *git.CodeHostURL
+	CurrentVersion string            // Content hash of currently displayed version (empty = latest)
+	LatestCount    int               // Message count in latest version
+	Versions       []ThreadVersionInfo // All versions of this thread
 }
 
 // handleIndex handles the landing page showing all repositories
@@ -195,17 +210,32 @@ func (s *WebServer) handleCommit(w http.ResponseWriter, r *http.Request, repoPat
 	for _, ref := range commit.Threads {
 		var thread *model.Thread
 		var err error
+		isVersioned := false
 
 		// Try to load specific version first
 		if ref.ContentHash != "" {
 			thread, err = repo.LoadThreadVersion(ref.ThreadID, ref.ContentHash)
+			if err == nil {
+				isVersioned = true
+			}
 		}
 		// Fall back to latest version
 		if thread == nil || err != nil {
 			thread, err = repo.LoadThread(ref.ThreadID)
 		}
 		if err == nil {
-			twc := ThreadWithContext{Thread: thread}
+			twc := ThreadWithContext{
+				Thread:      thread,
+				ContentHash: ref.ContentHash,
+				IsVersioned: isVersioned,
+			}
+
+			// Load latest version to get current message count
+			if isVersioned {
+				if latest, latestErr := repo.LoadThread(ref.ThreadID); latestErr == nil {
+					twc.LatestCount = len(latest.Messages)
+				}
+			}
 
 			// Load parent thread if this is a continuation
 			if thread.ParentThreadID != "" {
@@ -250,10 +280,62 @@ func (s *WebServer) handleThread(w http.ResponseWriter, r *http.Request, repoPat
 		return
 	}
 
-	thread, err := repo.LoadThread(threadID)
+	// Load the latest version first
+	latestThread, err := repo.LoadThread(threadID)
 	if err != nil {
 		http.Error(w, "Thread not found", http.StatusNotFound)
 		return
+	}
+	latestCount := len(latestThread.Messages)
+
+	// Check if a specific version was requested
+	requestedVersion := r.URL.Query().Get("version")
+	thread := latestThread
+	if requestedVersion != "" {
+		if versionedThread, vErr := repo.LoadThreadVersion(threadID, requestedVersion); vErr == nil {
+			thread = versionedThread
+		}
+	}
+
+	// Build version info: find all versions and which commits reference them
+	var versions []ThreadVersionInfo
+	versionHashes, _ := repo.ListThreadVersions(threadID)
+	commits, _ := repo.ListCommits()
+
+	// Build a map of content_hash -> commits that reference it
+	hashToCommits := make(map[string][]*model.TinCommit)
+	for _, commit := range commits {
+		for _, ref := range commit.Threads {
+			if ref.ThreadID == threadID && ref.ContentHash != "" {
+				hashToCommits[ref.ContentHash] = append(hashToCommits[ref.ContentHash], commit)
+			}
+		}
+	}
+
+	// Create version info for each version that is referenced by at least one commit
+	for _, hash := range versionHashes {
+		if commitList, ok := hashToCommits[hash]; ok && len(commitList) > 0 {
+			vThread, vErr := repo.LoadThreadVersion(threadID, hash)
+			if vErr != nil {
+				continue
+			}
+			versions = append(versions, ThreadVersionInfo{
+				ContentHash:  hash,
+				MessageCount: len(vThread.Messages),
+				Commits:      commitList,
+				IsCurrent:    hash == requestedVersion || (requestedVersion == "" && hash == latestThread.ComputeContentHash()),
+				IsLatest:     hash == latestThread.ComputeContentHash(),
+			})
+		}
+	}
+
+	// Sort versions by message count (ascending)
+	for i := 0; i < len(versions); i++ {
+		for j := i + 1; j < len(versions); j++ {
+			if versions[i].MessageCount > versions[j].MessageCount {
+				versions[i], versions[j] = versions[j], versions[i]
+			}
+		}
 	}
 
 	// Load parent thread if this is a continuation
@@ -272,13 +354,16 @@ func (s *WebServer) handleThread(w http.ResponseWriter, r *http.Request, repoPat
 	}
 
 	data := ThreadPageData{
-		Title:        "Thread " + threadID[:7],
-		RepoPath:     repoPath,
-		RepoName:     filepath.Base(repoPath),
-		Thread:       thread,
-		ParentThread: parentThread,
-		ChildThreads: childThreads,
-		CodeHostURL:  codeHostURL,
+		Title:          "Thread " + threadID[:7],
+		RepoPath:       repoPath,
+		RepoName:       filepath.Base(repoPath),
+		Thread:         thread,
+		ParentThread:   parentThread,
+		ChildThreads:   childThreads,
+		CodeHostURL:    codeHostURL,
+		CurrentVersion: requestedVersion,
+		LatestCount:    latestCount,
+		Versions:       versions,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

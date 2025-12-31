@@ -41,7 +41,7 @@
     <div class="thread">
         <div class="thread-header">
             <h3>
-                <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}">Thread <code>{{shortID .Thread.ID}}</code></a>
+                <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}{{if .ContentHash}}?version={{.ContentHash}}{{end}}">Thread <code>{{shortID .Thread.ID}}</code></a>
                 {{if .ParentThread}}
                 <span class="continuation-note">(continued from <a href="/repo/{{$.RepoPath}}/thread/{{.ParentThread.ID}}"><code>{{shortID .ParentThread.ID}}</code></a>)</span>
                 {{end}}
@@ -52,7 +52,7 @@
             <p>
                 <strong>Agent:</strong> {{.Thread.Agent}} |
                 <strong>Started:</strong> {{formatTime .Thread.StartedAt}} |
-                <strong>Messages:</strong> {{len .Thread.Messages}}
+                <strong>Messages:</strong> {{len .Thread.Messages}}{{if and .IsVersioned (gt .LatestCount (len .Thread.Messages))}} <span class="version-note">(of {{.LatestCount}} in latest version)</span>{{end}}
             </p>
         </div>
 
@@ -68,7 +68,7 @@
         {{end}}
         {{end}}
         <div class="view-more">
-            <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}">View full thread ({{len .Thread.Messages}} messages)</a>
+            <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}{{if .ContentHash}}?version={{.ContentHash}}{{end}}">View full thread ({{len .Thread.Messages}} messages)</a>
         </div>
     </div>
     {{end}}
