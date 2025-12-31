@@ -1,7 +1,5 @@
 # tin
 
---
-
 [![License: Apache](https://img.shields.io/badge/license-Apache%20License%202.0-blue)](https://opensource.org/licenses/Apache-2.0) 
 
 Thread-based version control for conversational agentic coding. Wraps git, treating conversation threads as the primary unit of change.
@@ -34,7 +32,6 @@ For the first time, developers that use coding agents are forced to write down t
 ```bash
 go install github.com/dadlerj/tin/cmd/tin@latest
 
-```
 tin init                        # Initialize in a git repo
 tin hooks install               # Set up Claude Code integration
 claude                          # ... have a conversation in your agent of choice
@@ -74,12 +71,12 @@ Push your changes to a `tin` remote (see `tin serve`) if you want to collaborate
 
 `tin` also provides a simple web viewer to see tin repositories, commits, and threads. Run `tin serve --web --port 8080` to view it.
 
-![The tin web viewer: commits](tin-web-commits.png)
-![The tin web viewer: threads](tin-web-threads).png)
+![The tin web viewer: commits](assets/tin-web-commits.png)
+![The tin web viewer: threads](assets/tin-web-thread.png)
 
 All `tin` commits are connected to git commits (if the git commit hash for a tin commit changes, the tin commit hash will as well). All git commits link back to the `tin` threads that created them.
 
-![Git commits with tin connectivity](tin-in-github.png)
+![Git commits with tin connectivity](assets/tin-in-github.png)
 
 ## Why the name "`tin`"?
 
