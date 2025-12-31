@@ -40,16 +40,24 @@
     {{range .Threads}}
     <div class="thread">
         <div class="thread-header">
-            <h3><a href="/repo/{{$.RepoPath}}/thread/{{.ID}}">Thread <code>{{shortID .ID}}</code></a></h3>
+            <h3>
+                <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}">Thread <code>{{shortID .Thread.ID}}</code></a>
+                {{if .ParentThread}}
+                <span class="continuation-note">(continued from <a href="/repo/{{$.RepoPath}}/thread/{{.ParentThread.ID}}"><code>{{shortID .ParentThread.ID}}</code></a>)</span>
+                {{end}}
+                {{if .ChildThreads}}
+                <span class="continuation-note">(continued in {{range $i, $child := .ChildThreads}}{{if $i}}, {{end}}<a href="/repo/{{$.RepoPath}}/thread/{{$child.ID}}"><code>{{shortID $child.ID}}</code></a>{{end}})</span>
+                {{end}}
+            </h3>
             <p>
-                <strong>Agent:</strong> {{.Agent}} |
-                <strong>Started:</strong> {{formatTime .StartedAt}} |
-                <strong>Messages:</strong> {{len .Messages}}
+                <strong>Agent:</strong> {{.Thread.Agent}} |
+                <strong>Started:</strong> {{formatTime .Thread.StartedAt}} |
+                <strong>Messages:</strong> {{len .Thread.Messages}}
             </p>
         </div>
 
-        {{if .Messages}}
-        {{with index .Messages 0}}
+        {{if .Thread.Messages}}
+        {{with index .Thread.Messages 0}}
         <div class="message {{roleClass .Role}}">
             <div class="message-header">
                 <span class="message-role">{{if eq .Role "human"}}Human{{else}}Assistant{{end}}</span>
@@ -60,7 +68,7 @@
         {{end}}
         {{end}}
         <div class="view-more">
-            <a href="/repo/{{$.RepoPath}}/thread/{{.ID}}">View full thread ({{len .Messages}} messages)</a>
+            <a href="/repo/{{$.RepoPath}}/thread/{{.Thread.ID}}">View full thread ({{len .Thread.Messages}} messages)</a>
         </div>
     </div>
     {{end}}

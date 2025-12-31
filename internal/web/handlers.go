@@ -38,13 +38,20 @@ type RepoPageData struct {
 	CodeHostURL    *git.CodeHostURL
 }
 
+// ThreadWithContext wraps a thread with its continuation info
+type ThreadWithContext struct {
+	Thread       *model.Thread
+	ParentThread *model.Thread   // Thread this continues from (if any)
+	ChildThreads []*model.Thread // Threads that continue from this one
+}
+
 // CommitPageData contains data for the commit detail page
 type CommitPageData struct {
 	Title       string
 	RepoPath    string
 	RepoName    string
 	Commit      *model.TinCommit
-	Threads     []*model.Thread
+	Threads     []ThreadWithContext
 	CodeHostURL *git.CodeHostURL
 }
 
@@ -183,9 +190,8 @@ func (s *WebServer) handleCommit(w http.ResponseWriter, r *http.Request, repoPat
 		return
 	}
 
-	// Load all threads referenced in commit
-	// Try to load specific version if ContentHash is available
-	var threads []*model.Thread
+	// Load all threads referenced in commit with their continuation context
+	var threads []ThreadWithContext
 	for _, ref := range commit.Threads {
 		var thread *model.Thread
 		var err error
@@ -199,7 +205,17 @@ func (s *WebServer) handleCommit(w http.ResponseWriter, r *http.Request, repoPat
 			thread, err = repo.LoadThread(ref.ThreadID)
 		}
 		if err == nil {
-			threads = append(threads, thread)
+			twc := ThreadWithContext{Thread: thread}
+
+			// Load parent thread if this is a continuation
+			if thread.ParentThreadID != "" {
+				twc.ParentThread, _ = repo.LoadThread(thread.ParentThreadID)
+			}
+
+			// Find any threads that continue from this one
+			twc.ChildThreads, _ = repo.FindChildThreads(thread.ID)
+
+			threads = append(threads, twc)
 		}
 	}
 

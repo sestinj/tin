@@ -24,10 +24,10 @@
         <span class="continuation-label">Continues from:</span>
         <a href="/repo/{{$.RepoPath}}/thread/{{.ParentThread.ID}}">
             <code>{{shortID .ParentThread.ID}}</code>
+            {{if .ParentThread.Messages}}
+            <span class="continuation-preview">{{truncate (index .ParentThread.Messages 0).Content 50}}</span>
+            {{end}}
         </a>
-        {{if .ParentThread.Messages}}
-        <span class="continuation-preview">{{truncate (index .ParentThread.Messages 0).Content 50}}</span>
-        {{end}}
     </div>
     {{end}}
 
