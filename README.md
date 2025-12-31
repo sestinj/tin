@@ -74,11 +74,11 @@ Push your changes to a `tin` remote (see `tin serve`) if you want to collaborate
 
 **The tin web commits page**
 
-<img src="assets/tin-web-commits.png" alt="The tin web viewer: commits" width="350">
+<img src="assets/tin-web-commits.png" alt="The tin web viewer: commits" width="500">
 
 **The tin web thread page**
 
-<img src="assets/tin-web-thread.png" alt="The tin web viewer: threads" width="350">
+<img src="assets/tin-web-thread.png" alt="The tin web viewer: threads" width="500">
 
 ### `tin` in git
 
@@ -86,7 +86,7 @@ All `tin` commits are connected to git commits (if the git commit hash for a tin
 
 **tin in GitHub**
 
-<img src="assets/tin-in-github.png" alt="Git commits with tin connectivity" width="350">
+<img src="assets/tin-in-github.png" alt="Git commits with tin connectivity" width="500">
 
 ## Why the name "`tin`"?
 
