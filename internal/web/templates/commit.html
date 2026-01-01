@@ -17,7 +17,7 @@
         </nav>
     </div>
 
-    <h2>Commit <code>{{shortID .Commit.ID}}</code></h2>
+    <h2>{{if isMergeCommit .Commit}}<span class="merge-badge">Merge</span>{{end}}Commit <code>{{shortID .Commit.ID}}</code></h2>
 
     <dl class="metadata">
         <dt>Message</dt>
@@ -32,6 +32,14 @@
         {{if .Commit.Author}}
         <dt>Author</dt>
         <dd>{{.Commit.Author}}</dd>
+        {{end}}
+        {{if .ParentCommit}}
+        <dt>Parent</dt>
+        <dd><a href="/repo/{{.RepoPath}}/commit/{{.ParentCommit.ID}}"><code>{{shortID .ParentCommit.ID}}</code></a> {{truncate .ParentCommit.Message 40}}</dd>
+        {{end}}
+        {{if .SecondParentCommit}}
+        <dt>Merge Parent</dt>
+        <dd><a href="/repo/{{.RepoPath}}/commit/{{.SecondParentCommit.ID}}"><code>{{shortID .SecondParentCommit.ID}}</code></a> {{truncate .SecondParentCommit.Message 40}}</dd>
         {{end}}
         <dt>Threads</dt>
         <dd>{{len .Commit.Threads}} thread(s)</dd>

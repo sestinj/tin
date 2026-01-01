@@ -79,6 +79,37 @@ tin checkout abc123          # Checkout a specific commit
 
 ---
 
+### tin merge
+
+Merge a branch into the current branch, combining both git history and thread history.
+
+```
+tin merge <branch>
+tin merge --continue
+tin merge --abort
+```
+
+**Options:**
+- `--continue` - Complete merge after resolving git conflicts
+- `--abort` - Cancel an in-progress merge
+
+**Thread Conflict Handling:**
+
+If the same thread exists on both branches with different content, both versions are kept. The source branch's version is renamed with a suffix (e.g., `thread-id_from_feature-branch`).
+
+**Git Conflict Handling:**
+
+If git encounters merge conflicts, the merge will pause. Resolve the conflicts in your editor, then run `tin merge --continue` to complete the merge, or `tin merge --abort` to cancel.
+
+**Examples:**
+```bash
+tin merge feature-auth      # Merge feature-auth into current branch
+tin merge --continue        # Complete paused merge after conflict resolution
+tin merge --abort           # Cancel in-progress merge
+```
+
+---
+
 ### tin add
 
 Stage threads for commit.

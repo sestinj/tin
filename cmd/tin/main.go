@@ -29,6 +29,8 @@ func main() {
 		err = commands.Branch(args)
 	case "checkout":
 		err = commands.Checkout(args)
+	case "merge":
+		err = commands.Merge(args)
 	case "add":
 		err = commands.Add(args)
 	case "commit":
@@ -79,6 +81,7 @@ Commands:
   status      Show the current state of the repository
   branch      Create or list branches
   checkout    Switch branches or restore working tree
+  merge       Merge a branch into the current branch
   add         Stage threads for commit
   commit      Record changes to the repository
   log         Show commit history with thread summaries

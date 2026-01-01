@@ -27,6 +27,22 @@ func Status(args []string) error {
 		return err
 	}
 
+	// Check for merge in progress
+	if repo.IsMergeInProgress() {
+		mergeState, err := repo.ReadMergeState()
+		if err == nil {
+			fmt.Println("\033[33mMerge in progress:\033[0m")
+			fmt.Printf("  Merging '%s' into '%s'\n", mergeState.SourceBranch, mergeState.TargetBranch)
+			if repo.GitHasMergeConflicts() {
+				fmt.Println("  \033[31mConflicts detected - resolve and run 'tin merge --continue'\033[0m")
+			} else {
+				fmt.Println("  No conflicts - run 'tin merge --continue' to complete")
+			}
+			fmt.Println("  Or run 'tin merge --abort' to cancel")
+			fmt.Println()
+		}
+	}
+
 	// Check for branch mismatch and warn prominently
 	state, err := repo.GetBranchState()
 	if err == nil && !state.InSync && state.GitBranch != "" {

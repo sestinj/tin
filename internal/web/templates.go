@@ -27,6 +27,7 @@ func init() {
 		"commitURL":       commitURL,
 		"limitMessages":   limitMessages,
 		"hasMoreMessages": hasMoreMessages,
+		"isMergeCommit":   isMergeCommit,
 	}
 
 	templates = template.Must(template.New("").
@@ -94,4 +95,9 @@ func limitMessages(messages []model.Message, limit int) []model.Message {
 // hasMoreMessages checks if a thread has more than N messages
 func hasMoreMessages(messages []model.Message, limit int) bool {
 	return len(messages) > limit
+}
+
+// isMergeCommit checks if a commit is a merge commit (has two parents)
+func isMergeCommit(commit *model.TinCommit) bool {
+	return commit != nil && commit.SecondParentID != ""
 }

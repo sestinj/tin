@@ -50,12 +50,14 @@ type ThreadWithContext struct {
 
 // CommitPageData contains data for the commit detail page
 type CommitPageData struct {
-	Title       string
-	RepoPath    string
-	RepoName    string
-	Commit      *model.TinCommit
-	Threads     []ThreadWithContext
-	CodeHostURL *git.CodeHostURL
+	Title              string
+	RepoPath           string
+	RepoName           string
+	Commit             *model.TinCommit
+	Threads            []ThreadWithContext
+	CodeHostURL        *git.CodeHostURL
+	ParentCommit       *model.TinCommit // First parent (for all commits)
+	SecondParentCommit *model.TinCommit // Second parent (merge commits only)
 }
 
 // ThreadVersionInfo describes a version of a thread and which commits reference it
@@ -255,13 +257,24 @@ func (s *WebServer) handleCommit(w http.ResponseWriter, r *http.Request, repoPat
 		codeHostURL = git.ParseGitRemoteURL(remoteURL)
 	}
 
+	// Load parent commits for merge visualization
+	var parentCommit, secondParentCommit *model.TinCommit
+	if commit.ParentCommitID != "" {
+		parentCommit, _ = repo.LoadCommit(commit.ParentCommitID)
+	}
+	if commit.SecondParentID != "" {
+		secondParentCommit, _ = repo.LoadCommit(commit.SecondParentID)
+	}
+
 	data := CommitPageData{
-		Title:       "Commit " + commitID[:7],
-		RepoPath:    repoPath,
-		RepoName:    filepath.Base(repoPath),
-		Commit:      commit,
-		Threads:     threads,
-		CodeHostURL: codeHostURL,
+		Title:              "Commit " + commitID[:7],
+		RepoPath:           repoPath,
+		RepoName:           filepath.Base(repoPath),
+		Commit:             commit,
+		Threads:            threads,
+		CodeHostURL:        codeHostURL,
+		ParentCommit:       parentCommit,
+		SecondParentCommit: secondParentCommit,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
