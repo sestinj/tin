@@ -44,6 +44,16 @@ func Push(args []string) error {
 		return err
 	}
 
+	// Check tin/git state alignment (unless force)
+	if !force {
+		if err := repo.CheckBranchSync(); err != nil {
+			if mismatch, ok := err.(*storage.BranchMismatchError); ok {
+				return fmt.Errorf("%s\n\nUse 'tin sync' to align states, or 'tin push --force' to proceed anyway", mismatch)
+			}
+			return err
+		}
+	}
+
 	// Default to current branch
 	if branch == "" {
 		branch, err = repo.ReadHead()

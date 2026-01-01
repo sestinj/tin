@@ -46,6 +46,8 @@ func main() {
 		err = commands.Remote(args)
 	case "push":
 		err = commands.Push(args)
+	case "sync":
+		err = commands.Sync(args)
 	case "pull":
 		err = commands.Pull(args)
 	case "serve":
@@ -82,6 +84,7 @@ Commands:
   log         Show commit history with thread summaries
   thread      Manage threads (list, show, start, append)
   hooks       Manage Claude Code integration hooks
+  sync        Synchronize tin and git branch state
 
 Remote commands:
   remote      Manage remote repositories

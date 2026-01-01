@@ -11,6 +11,7 @@ import (
 
 func Commit(args []string) error {
 	var message string
+	var force bool
 
 	// Parse flags
 	for i := 0; i < len(args); i++ {
@@ -23,6 +24,8 @@ func Commit(args []string) error {
 				message = args[i+1]
 				i++
 			}
+		case "-f", "--force":
+			force = true
 		}
 	}
 
@@ -34,6 +37,16 @@ func Commit(args []string) error {
 	repo, err := storage.Open(cwd)
 	if err != nil {
 		return err
+	}
+
+	// Check tin/git state alignment (unless force)
+	if !force {
+		if err := repo.CheckBranchSync(); err != nil {
+			if mismatch, ok := err.(*storage.BranchMismatchError); ok {
+				return fmt.Errorf("%s\n\nUse 'tin sync' to align states, or 'tin commit --force' to proceed anyway", mismatch)
+			}
+			return err
+		}
 	}
 
 	// Get staged threads
@@ -147,10 +160,12 @@ func truncateCommitMessage(msg string) string {
 func printCommitHelp() {
 	fmt.Println(`Record changes to the repository
 
-Usage: tin commit [-m <message>]
+Usage: tin commit [-m <message>] [--force]
 
 Options:
   -m, --message <msg>  Commit message (optional, auto-generated if not provided)
+  -f, --force          Commit even if tin and git branches don't match
+  -h, --help           Show this help message
 
 This command creates a new commit containing all staged threads.
 

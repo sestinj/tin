@@ -27,6 +27,16 @@ func Status(args []string) error {
 		return err
 	}
 
+	// Check for branch mismatch and warn prominently
+	state, err := repo.GetBranchState()
+	if err == nil && !state.InSync && state.GitBranch != "" {
+		fmt.Println("\033[33mWARNING: tin/git branch mismatch!\033[0m")
+		fmt.Printf("  tin: %s\n", state.TinBranch)
+		fmt.Printf("  git: %s\n", state.GitBranch)
+		fmt.Println("  Run 'tin sync' to align, or 'tin sync --dry-run' to preview.")
+		fmt.Println()
+	}
+
 	// Get current branch
 	branch, err := repo.ReadHead()
 	if err != nil {

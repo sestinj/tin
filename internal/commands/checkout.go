@@ -87,18 +87,21 @@ func Checkout(args []string) error {
 			commitID = currentCommit.ID
 		}
 
-		// Create and switch to new tin branch
+		// Create git branch first - if this fails, abort before changing tin state
+		if err := repo.GitCreateAndCheckoutBranch(target); err != nil {
+			return fmt.Errorf("failed to create git branch: %w", err)
+		}
+
+		// Now update tin state (git succeeded)
 		if err := repo.WriteBranch(target, commitID); err != nil {
+			// Try to rollback git (best effort)
+			repo.GitCheckoutBranch(currentBranch)
+			repo.GitDeleteBranch(target)
 			return err
 		}
 
 		if err := repo.WriteHead(target); err != nil {
 			return err
-		}
-
-		// Also create and switch to new git branch
-		if err := repo.GitCreateAndCheckoutBranch(target); err != nil {
-			fmt.Printf("Warning: Failed to create git branch: %s\n", err)
 		}
 
 		fmt.Printf("Switched to a new branch '%s'\n", target)
@@ -138,14 +141,22 @@ func checkoutBranch(repo *storage.Repository, name string) error {
 		return err
 	}
 
+	// Save current HEAD for potential rollback
+	previousHead, err := repo.ReadHead()
+	if err != nil {
+		return err
+	}
+
 	// Update tin HEAD
 	if err := repo.WriteHead(name); err != nil {
 		return err
 	}
 
-	// Switch git branch
+	// Switch git branch - fail-hard if it doesn't work
 	if err := repo.GitCheckoutBranch(name); err != nil {
-		fmt.Printf("Warning: Failed to switch git branch: %s\n", err)
+		// Rollback tin HEAD
+		repo.WriteHead(previousHead)
+		return fmt.Errorf("failed to switch git branch (tin HEAD unchanged): %w", err)
 	}
 
 	if commit != nil {
