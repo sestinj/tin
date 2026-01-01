@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func setupTestRepo(t *testing.T) (string, func()) {

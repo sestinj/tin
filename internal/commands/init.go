@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func Init(args []string) error {

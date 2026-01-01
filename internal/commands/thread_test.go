@@ -3,8 +3,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/danieladler/tin/internal/model"
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func TestThread_NoSubcommand(t *testing.T) {

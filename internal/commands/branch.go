@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func Branch(args []string) error {
@@ -113,9 +113,14 @@ func createBranch(repo *storage.Repository, name string) error {
 		commitID = currentCommit.ID
 	}
 
-	// Create branch
+	// Create tin branch
 	if err := repo.WriteBranch(name, commitID); err != nil {
 		return err
+	}
+
+	// Also create git branch
+	if err := repo.GitCreateBranch(name); err != nil {
+		fmt.Printf("Warning: Failed to create git branch: %s\n", err)
 	}
 
 	if commitID != "" {
@@ -148,8 +153,16 @@ func deleteBranchCmd(repo *storage.Repository, name string) error {
 		return fmt.Errorf("cannot delete branch '%s'", name)
 	}
 
+	// Delete tin branch
 	if err := repo.DeleteBranch(name); err != nil {
 		return err
+	}
+
+	// Also delete git branch (if it exists)
+	if repo.GitBranchExists(name) {
+		if err := repo.GitDeleteBranch(name); err != nil {
+			fmt.Printf("Warning: Failed to delete git branch: %s\n", err)
+		}
 	}
 
 	fmt.Printf("Deleted branch '%s'\n", name)

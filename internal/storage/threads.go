@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/danieladler/tin/internal/model"
+	"github.com/dadlerj/tin/internal/model"
 )
 
 // SaveThread saves a thread to the repository.

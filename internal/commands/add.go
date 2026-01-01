@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func Add(args []string) error {

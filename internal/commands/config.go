@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 // Known config keys with descriptions

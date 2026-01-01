@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/danieladler/tin/internal/model"
+	"github.com/dadlerj/tin/internal/model"
 )
 
 const (
@@ -206,6 +206,57 @@ func (r *Repository) GitCheckout(hash string) error {
 	cmd := exec.Command("git", "checkout", hash)
 	cmd.Dir = r.RootPath
 	return cmd.Run()
+}
+
+// GitCheckoutBranch switches to an existing git branch
+func (r *Repository) GitCheckoutBranch(name string) error {
+	cmd := exec.Command("git", "checkout", name)
+	cmd.Dir = r.RootPath
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git checkout failed: %s", string(output))
+	}
+	return nil
+}
+
+// GitCreateBranch creates a new git branch at the current commit (without switching)
+func (r *Repository) GitCreateBranch(name string) error {
+	cmd := exec.Command("git", "branch", name)
+	cmd.Dir = r.RootPath
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git branch failed: %s", string(output))
+	}
+	return nil
+}
+
+// GitCreateAndCheckoutBranch creates a new git branch and switches to it
+func (r *Repository) GitCreateAndCheckoutBranch(name string) error {
+	cmd := exec.Command("git", "checkout", "-b", name)
+	cmd.Dir = r.RootPath
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git checkout -b failed: %s", string(output))
+	}
+	return nil
+}
+
+// GitBranchExists checks if a git branch exists
+func (r *Repository) GitBranchExists(name string) bool {
+	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+	cmd.Dir = r.RootPath
+	return cmd.Run() == nil
+}
+
+// GitDeleteBranch deletes a git branch
+func (r *Repository) GitDeleteBranch(name string) error {
+	cmd := exec.Command("git", "branch", "-d", name)
+	cmd.Dir = r.RootPath
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git branch -d failed: %s", string(output))
+	}
+	return nil
 }
 
 // GitAdd stages files for commit

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/danieladler/tin/internal/model"
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func Checkout(args []string) error {
@@ -87,13 +87,18 @@ func Checkout(args []string) error {
 			commitID = currentCommit.ID
 		}
 
-		// Create and switch to new branch
+		// Create and switch to new tin branch
 		if err := repo.WriteBranch(target, commitID); err != nil {
 			return err
 		}
 
 		if err := repo.WriteHead(target); err != nil {
 			return err
+		}
+
+		// Also create and switch to new git branch
+		if err := repo.GitCreateAndCheckoutBranch(target); err != nil {
+			fmt.Printf("Warning: Failed to create git branch: %s\n", err)
 		}
 
 		fmt.Printf("Switched to a new branch '%s'\n", target)
@@ -133,16 +138,14 @@ func checkoutBranch(repo *storage.Repository, name string) error {
 		return err
 	}
 
-	// Update HEAD
+	// Update tin HEAD
 	if err := repo.WriteHead(name); err != nil {
 		return err
 	}
 
-	// Checkout git state if commit exists
-	if commit != nil && commit.GitCommitHash != "" {
-		if err := repo.GitCheckout(commit.GitCommitHash); err != nil {
-			fmt.Printf("Warning: Failed to checkout git state: %s\n", err)
-		}
+	// Switch git branch
+	if err := repo.GitCheckoutBranch(name); err != nil {
+		fmt.Printf("Warning: Failed to switch git branch: %s\n", err)
 	}
 
 	if commit != nil {

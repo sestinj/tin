@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/danieladler/tin/internal/model"
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 // Client handles connections to remote tin servers

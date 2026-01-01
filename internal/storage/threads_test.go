@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 
-	"github.com/danieladler/tin/internal/model"
+	"github.com/dadlerj/tin/internal/model"
 )
 
 func TestRepository_SaveAndLoadThread(t *testing.T) {

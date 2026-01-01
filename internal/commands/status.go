@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/danieladler/tin/internal/model"
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func Status(args []string) error {

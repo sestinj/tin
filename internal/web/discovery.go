@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 // RepoInfo contains metadata about a discovered tin repository

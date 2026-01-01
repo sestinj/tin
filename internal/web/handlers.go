@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/danieladler/tin/internal/git"
-	"github.com/danieladler/tin/internal/model"
-	"github.com/danieladler/tin/internal/storage"
+	"github.com/dadlerj/tin/internal/git"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 // Page data structures

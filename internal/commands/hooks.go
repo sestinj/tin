@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/danieladler/tin/internal/hooks"
+	"github.com/dadlerj/tin/internal/hooks"
 )
 
 func Hooks(args []string) error {

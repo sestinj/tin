@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/danieladler/tin/internal/remote"
-	"github.com/danieladler/tin/internal/web"
+	"github.com/dadlerj/tin/internal/remote"
+	"github.com/dadlerj/tin/internal/web"
 )
 
 func Serve(args []string) error {

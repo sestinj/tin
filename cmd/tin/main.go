@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/danieladler/tin/internal/commands"
+	"github.com/dadlerj/tin/internal/commands"
 )
 
 const version = "0.1.0"
