@@ -85,6 +85,47 @@ All `tin` commits are connected to git commits (if the git commit hash for a tin
 
 <img src="assets/tin-in-github.png" alt="Git commits with tin connectivity" width="500">
 
+## The `tin` control flow
+
+```mermaid
+sequenceDiagram
+      participant User
+      participant Agent as Agent<br/>(Claude Code, Amp, etc.)
+      participant Tin
+      participant Git
+
+      rect rgb(240, 248, 255)
+          Note over User, Git: Conversation Session
+          User->>Agent: Start conversation
+          Tin->>Tin: SessionStart → create thread
+
+          loop Discussion
+              User->>Agent: Send prompt
+              Tin->>Tin: Append human message
+              Agent->>Git: Make code changes
+              Agent->>User: Respond
+              Tin->>Tin: Append assistant message + git hash
+          end
+
+          User->>Agent: End session
+          Tin->>Tin: Auto-stage thread
+      end
+
+      rect rgb(255, 248, 240)
+          Note over User, Git: Commit Phase
+          User->>Tin: tin commit -m "message"
+          Tin->>Git: git commit (code changes)
+          Tin->>Tin: Create tin commit (thread refs)
+      end
+
+      rect rgb(240, 255, 240)
+          Note over User, Git: Push Phase
+          User->>Tin: tin push
+          Tin->>Git: git push (code)
+          Tin->>Tin: Push thread data to remote
+      end
+```
+
 ## Why the name "`tin`"?
 
 >"I'm an egotistical bastard, and I name all my projects after myself. First Linux, now **git**."
