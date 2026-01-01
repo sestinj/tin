@@ -63,6 +63,10 @@ Push your changes to a `tin` remote (see `tin serve`) if you want to collaborate
 
 `tin` will automatically track your agent conversations (and all versions of them, as they change) and the code changes associated with each one.
 
+### Documentation
+
+See [all `tin` commands](COMMANDS.md).
+
 ### `tin` server and web viewer
 
 `tin` ships with a `tin serve` command that starts a remote server that can accept `tin push`es and `tin pull`s. Use `tin remote` to point to the remote server.
@@ -85,7 +89,7 @@ All `tin` commits are connected to git commits (if the git commit hash for a tin
 
 <img src="assets/tin-in-github.png" alt="Git commits with tin connectivity" width="500">
 
-## The `tin` control flow
+### The `tin` control flow
 
 ```mermaid
 sequenceDiagram
