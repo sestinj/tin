@@ -309,34 +309,10 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 // shouldPromptForAmpPull checks if the user might want to run tin amp pull first
 // Returns (shouldPrompt, reason)
 func shouldPromptForAmpPull(repo *storage.Repository) (bool, string) {
-	// Check if there are uncommitted git changes
+	// Only prompt if there are unstaged git changes
 	files, err := repo.GitGetChangedFiles()
-	hasUncommittedChanges := err == nil && len(files) > 0
-
-	// Check if the latest local thread uses Amp
-	threads, err := repo.ListThreads()
-	latestUsesAmp := false
-	if err == nil && len(threads) > 0 {
-		latestUsesAmp = threads[0].Agent == "amp"
+	if err == nil && len(files) > 0 {
+		return true, fmt.Sprintf("You have %d unstaged file(s).", len(files))
 	}
-
-	// Prompt if either condition is true
-	if latestUsesAmp && hasUncommittedChanges {
-		return true, "Latest thread uses Amp and there are uncommitted git changes."
-	}
-	if latestUsesAmp {
-		return true, "Latest thread uses Amp."
-	}
-	if hasUncommittedChanges {
-		// Check if any staged thread uses Amp
-		staged, _ := repo.GetStagedThreads()
-		for _, ref := range staged {
-			thread, err := repo.LoadThread(ref.ThreadID)
-			if err == nil && thread.Agent == "amp" {
-				return true, "You have uncommitted git changes and staged Amp threads."
-			}
-		}
-	}
-
 	return false, ""
 }

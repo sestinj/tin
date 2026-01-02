@@ -188,12 +188,26 @@ func listAmpThreads(count int) ([]string, error) {
 }
 
 func fetchAmpThreadMarkdown(threadID string) (string, error) {
-	cmd := exec.Command("amp", "threads", "markdown", threadID)
-	output, err := cmd.Output()
+	// Write to temp file to work around amp CLI truncating output when piped
+	tmpFile, err := os.CreateTemp("", "amp-thread-*.md")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpPath)
+
+	// Use shell redirection to write to file
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("amp threads markdown %s > %s", threadID, tmpPath))
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(tmpPath)
 	if err != nil {
 		return "", err
 	}
-	return string(output), nil
+	return string(data), nil
 }
 
 func parseAmpMarkdown(markdown string, ampThreadID string) (*model.Thread, error) {
@@ -337,9 +351,6 @@ func parseAmpMarkdown(markdown string, ampThreadID string) (*model.Thread, error
 	// Flush final message
 	flushMessage()
 
-	// Merge consecutive assistant messages (tool uses followed by text responses)
-	thread.Messages = mergeConsecutiveAssistantMessages(thread.Messages)
-
 	// Set thread ID based on first message (consistent with tin's model)
 	if len(thread.Messages) > 0 {
 		thread.ID = thread.Messages[0].ID
@@ -353,58 +364,6 @@ func parseAmpMarkdown(markdown string, ampThreadID string) (*model.Thread, error
 	thread.CompletedAt = &now
 
 	return thread, nil
-}
-
-// mergeConsecutiveAssistantMessages combines adjacent assistant messages into one
-// This handles the pattern: [tool calls] -> [tool results (skipped)] -> [assistant text response]
-func mergeConsecutiveAssistantMessages(messages []model.Message) []model.Message {
-	if len(messages) == 0 {
-		return messages
-	}
-
-	var merged []model.Message
-	for i := 0; i < len(messages); i++ {
-		msg := messages[i]
-
-		// If this is an assistant message, look ahead for more
-		if msg.Role == model.RoleAssistant {
-			// Collect all consecutive assistant messages
-			combinedContent := strings.Builder{}
-			combinedToolCalls := append([]model.ToolCall{}, msg.ToolCalls...)
-			if msg.Content != "" {
-				combinedContent.WriteString(msg.Content)
-			}
-
-			j := i + 1
-			for j < len(messages) && messages[j].Role == model.RoleAssistant {
-				if messages[j].Content != "" {
-					if combinedContent.Len() > 0 {
-						combinedContent.WriteString("\n\n")
-					}
-					combinedContent.WriteString(messages[j].Content)
-				}
-				combinedToolCalls = append(combinedToolCalls, messages[j].ToolCalls...)
-				j++
-			}
-
-			// Create merged message
-			mergedMsg := model.Message{
-				ID:              msg.ID,
-				Role:            msg.Role,
-				Content:         strings.TrimSpace(combinedContent.String()),
-				Timestamp:       msg.Timestamp,
-				ToolCalls:       combinedToolCalls,
-				GitHashAfter:    messages[j-1].GitHashAfter, // Use last message's git hash
-				ParentMessageID: msg.ParentMessageID,
-			}
-			merged = append(merged, mergedMsg)
-			i = j - 1 // Skip the messages we merged
-		} else {
-			merged = append(merged, msg)
-		}
-	}
-
-	return merged
 }
 
 func printAmpHelp() {
