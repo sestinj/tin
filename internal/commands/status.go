@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/dadlerj/tin/internal/model"
 	"github.com/dadlerj/tin/internal/storage"
@@ -89,7 +90,7 @@ func Status(args []string) error {
 			}
 			preview := ""
 			if first := thread.FirstHumanMessage(); first != nil {
-				preview = truncate(first.Content, 50)
+				preview = truncate(extractPreview(first.Content), 60)
 			}
 			fmt.Printf("  %s (%d messages) %s\n", ref.ThreadID[:8], ref.MessageCount, preview)
 		}
@@ -110,7 +111,7 @@ func Status(args []string) error {
 			}
 			preview := ""
 			if first := thread.FirstHumanMessage(); first != nil {
-				preview = truncate(first.Content, 50)
+				preview = truncate(extractPreview(first.Content), 60)
 			}
 			fmt.Printf("  %s (%d messages)%s %s\n", thread.ID[:8], len(thread.Messages), status, preview)
 		}
@@ -160,4 +161,55 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen-3] + "..."
+}
+
+// extractPreview extracts meaningful preview text from message content,
+// skipping Amp metadata sections like "# Attached Files" and "# User State"
+func extractPreview(content string) string {
+	lines := strings.Split(content, "\n")
+
+	// Skip metadata sections at the start
+	inMetadataSection := false
+	inCodeBlock := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Track code blocks
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+
+		// Skip lines inside code blocks
+		if inCodeBlock {
+			continue
+		}
+
+		// Detect metadata section headers
+		if trimmed == "# Attached Files" || trimmed == "# User State" {
+			inMetadataSection = true
+			continue
+		}
+
+		// End metadata section on non-metadata header or meaningful content
+		if inMetadataSection {
+			// Another top-level header ends the metadata section
+			if strings.HasPrefix(trimmed, "# ") && trimmed != "# Attached Files" && trimmed != "# User State" {
+				inMetadataSection = false
+			} else {
+				continue
+			}
+		}
+
+		// Skip empty lines
+		if trimmed == "" {
+			continue
+		}
+
+		// Found meaningful content
+		return trimmed
+	}
+
+	return ""
 }

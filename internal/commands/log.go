@@ -88,7 +88,7 @@ func Log(args []string) error {
 
 				preview := ""
 				if first := thread.FirstHumanMessage(); first != nil {
-					preview = truncate(first.Content, 50)
+					preview = truncate(extractPreview(first.Content), 60)
 				}
 				fmt.Printf("      - %s (%d messages): %s\n", ref.ThreadID[:8], ref.MessageCount, preview)
 			}

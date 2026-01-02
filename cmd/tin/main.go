@@ -41,6 +41,8 @@ func main() {
 		err = commands.Thread(args)
 	case "hooks":
 		err = commands.Hooks(args)
+	case "amp":
+		err = commands.Amp(args)
 	case "hook":
 		// Internal hook handlers (called by Claude Code hooks)
 		err = commands.Hooks(args)
@@ -87,6 +89,7 @@ Commands:
   log         Show commit history with thread summaries
   thread      Manage threads (list, show, start, append)
   hooks       Manage Claude Code integration hooks
+  amp         Manage Amp agent integration (pull threads)
   sync        Synchronize tin and git branch state
 
 Remote commands:

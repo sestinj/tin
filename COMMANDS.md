@@ -416,6 +416,34 @@ tin config set code_host_url https://github.com/user/repo
 
 ---
 
+## Amp Commands
+
+### tin amp pull
+
+Pull threads from Amp into the tin repository.
+
+```
+tin amp pull [argument]
+```
+
+**Arguments:**
+- `<thread-url>` - Pull a specific thread by URL (e.g., `https://ampcode.com/threads/T-...`)
+- `<thread-id>` - Pull a specific thread by ID (e.g., `T-019b7d09-b84c-700d-81a8-dc9536e90b62`)
+- `<number>` - Pull the N most recent threads
+- `(none)` - Pull the most recent thread
+
+Pulled threads are automatically staged and deduplicated by Amp thread ID.
+
+**Examples:**
+```bash
+tin amp pull                                    # Pull latest thread
+tin amp pull 3                                  # Pull 3 latest threads
+tin amp pull T-019b7d09-b84c-700d-81a8-dc9536e90b62  # Pull specific thread
+tin amp pull https://ampcode.com/threads/T-... # Pull by URL
+```
+
+---
+
 ## Global Options
 
 All commands support:
