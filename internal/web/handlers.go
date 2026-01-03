@@ -27,6 +27,12 @@ type BranchInfo struct {
 	CommitID  string
 }
 
+// CommitWithAgents wraps a commit with the agents that contributed threads
+type CommitWithAgents struct {
+	*model.TinCommit
+	Agents []string // unique agent names ("amp", "claude-code")
+}
+
 // RepoPageData contains data for the repository page
 type RepoPageData struct {
 	Title          string
@@ -34,7 +40,7 @@ type RepoPageData struct {
 	RepoName       string
 	Branches       []BranchInfo
 	SelectedBranch string
-	Commits        []*model.TinCommit
+	Commits        []CommitWithAgents
 	CodeHostURL    *git.CodeHostURL
 }
 
@@ -162,11 +168,18 @@ func (s *WebServer) handleRepoPage(w http.ResponseWriter, r *http.Request, repoP
 		}
 	}
 
-	// Get commits for selected branch
-	var commits []*model.TinCommit
+	// Get commits for selected branch and compute agents for each
+	var commits []CommitWithAgents
 	branchCommitID, _ := repo.ReadBranch(selectedBranch)
 	if branchCommitID != "" {
-		commits, _ = repo.GetCommitHistory(branchCommitID, 50)
+		rawCommits, _ := repo.GetCommitHistory(branchCommitID, 50)
+		for _, commit := range rawCommits {
+			agents := getCommitAgents(repo, commit)
+			commits = append(commits, CommitWithAgents{
+				TinCommit: commit,
+				Agents:    agents,
+			})
+		}
 	}
 
 	// Try to detect code host URL from config or git remote
@@ -418,4 +431,32 @@ func isBareRepoPath(path string) bool {
 	}
 
 	return true
+}
+
+// getCommitAgents returns the unique agents that contributed threads to a commit
+// Returns agents in a consistent order: amp first, then claude-code
+func getCommitAgents(repo *storage.Repository, commit *model.TinCommit) []string {
+	agentSet := make(map[string]bool)
+	for _, ref := range commit.Threads {
+		thread, err := repo.LoadThread(ref.ThreadID)
+		if err == nil && thread.Agent != "" {
+			agentSet[thread.Agent] = true
+		}
+	}
+
+	// Return in consistent order for predictable rendering
+	var agents []string
+	if agentSet["amp"] {
+		agents = append(agents, "amp")
+	}
+	if agentSet["claude-code"] {
+		agents = append(agents, "claude-code")
+	}
+	// Add any other agents
+	for agent := range agentSet {
+		if agent != "amp" && agent != "claude-code" {
+			agents = append(agents, agent)
+		}
+	}
+	return agents
 }

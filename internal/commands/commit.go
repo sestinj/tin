@@ -309,10 +309,10 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 // shouldPromptForAmpPull checks if the user might want to run tin amp pull first
 // Returns (shouldPrompt, reason)
 func shouldPromptForAmpPull(repo *storage.Repository) (bool, string) {
-	// Only prompt if there are unstaged git changes
-	files, err := repo.GitGetChangedFiles()
-	if err == nil && len(files) > 0 {
-		return true, fmt.Sprintf("You have %d unstaged file(s).", len(files))
+	// Only prompt if there are unstaged working directory changes (not already staged to git)
+	hasUnstaged, err := repo.GitHasUnstagedChanges()
+	if err == nil && hasUnstaged {
+		return true, "You have unstaged git changes that may be from an Amp session."
 	}
 	return false, ""
 }

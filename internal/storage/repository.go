@@ -316,6 +316,23 @@ func (r *Repository) GitHasStagedChanges() (bool, error) {
 	return false, nil
 }
 
+// GitHasUnstagedChanges returns true if there are modified files in the working directory
+// that are NOT staged for commit.
+func (r *Repository) GitHasUnstagedChanges() (bool, error) {
+	cmd := exec.Command("git", "diff", "--quiet")
+	cmd.Dir = r.RootPath
+	err := cmd.Run()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() == 1 {
+				return true, nil
+			}
+		}
+		return false, err
+	}
+	return false, nil
+}
+
 // GitGetChangedFiles returns all modified, untracked, and staged files.
 // Uses git status --porcelain which respects .gitignore.
 // Excludes .tin/ directory files.

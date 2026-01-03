@@ -28,6 +28,7 @@ func NewWebServer(host string, port int, rootPath string) *WebServer {
 func (s *WebServer) Start() error {
 	mux := http.NewServeMux()
 
+	mux.Handle("/assets/", http.StripPrefix("/assets/", serveAssets()))
 	mux.HandleFunc("/", s.handleIndex)
 	mux.HandleFunc("/repo/", s.handleRepo)
 

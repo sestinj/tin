@@ -32,6 +32,7 @@
     <table>
         <thead>
             <tr>
+                <th></th>
                 <th>ID</th>
                 <th>Message</th>
                 <th>Date</th>
@@ -41,8 +42,21 @@
         <tbody>
         {{range .Commits}}
             <tr>
+                <td class="agent-icons-cell">
+                    {{if eq (len .Agents) 1}}
+                        {{$iconPath := agentIconPath (index .Agents 0)}}
+                        {{if $iconPath}}<img src="{{$iconPath}}" alt="{{index .Agents 0}}" title="{{index .Agents 0}}" class="agent-icon {{agentIconClass (index .Agents 0)}}">{{end}}
+                    {{else if gt (len .Agents) 1}}
+                        <span class="agent-icons-stacked">
+                            {{range $i, $agent := .Agents}}
+                                {{$iconPath := agentIconPath $agent}}
+                                {{if $iconPath}}<img src="{{$iconPath}}" alt="{{$agent}}" title="{{$agent}}" class="agent-icon {{agentIconClass $agent}} stacked-{{$i}}">{{end}}
+                            {{end}}
+                        </span>
+                    {{end}}
+                </td>
                 <td>
-                    {{if isMergeCommit .}}<span class="merge-indicator" title="Merge commit">⑂</span>{{end}}<a href="/repo/{{$.RepoPath}}/commit/{{.ID}}" class="commit-hash">{{shortID .ID}}</a>
+                    {{if isMergeCommit .TinCommit}}<span class="merge-indicator" title="Merge commit">⑂</span>{{end}}<a href="/repo/{{$.RepoPath}}/commit/{{.ID}}" class="commit-hash">{{shortID .ID}}</a>
                 </td>
                 <td>{{truncate .Message 60}}</td>
                 <td>{{formatTime .Timestamp}}</td>

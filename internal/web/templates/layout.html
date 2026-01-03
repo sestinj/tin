@@ -332,5 +332,30 @@
         color: #666;
         font-size: 0.9em;
     }
+
+    /* Commit list agent icons */
+    .agent-icons-cell {
+        width: 36px;
+        text-align: center;
+        padding-right: 0;
+    }
+    .agent-icons-stacked {
+        display: inline-block;
+        position: relative;
+        width: 32px;
+        height: 20px;
+    }
+    .agent-icons-stacked .agent-icon {
+        position: absolute;
+        top: 0;
+    }
+    .agent-icons-stacked .agent-icon.stacked-0 {
+        left: 0;
+        z-index: 2;
+    }
+    .agent-icons-stacked .agent-icon.stacked-1 {
+        left: 12px;
+        z-index: 1;
+    }
 </style>
 {{end}}
