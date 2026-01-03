@@ -311,8 +311,21 @@ func generateCommitMessage(repo *storage.Repository, staged []model.ThreadRef) s
 func shouldPromptForAmpPull(repo *storage.Repository) (bool, string) {
 	// Only prompt if there are unstaged working directory changes (not already staged to git)
 	hasUnstaged, err := repo.GitHasUnstagedChanges()
-	if err == nil && hasUnstaged {
+	if err != nil || !hasUnstaged {
+		return false, ""
+	}
+
+	// Only prompt if the latest thread is from Amp (or there are no threads yet)
+	threads, err := repo.ListThreads()
+	if err != nil || len(threads) == 0 {
+		// No threads or error - could be a fresh Amp session
 		return true, "You have unstaged git changes that may be from an Amp session."
 	}
+
+	// Check if the most recent thread is from Amp
+	if threads[0].Agent == "amp" {
+		return true, "You have unstaged git changes that may be from an Amp session."
+	}
+
 	return false, ""
 }
