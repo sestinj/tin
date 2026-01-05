@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/dadlerj/tin/internal/storage"
@@ -110,7 +111,7 @@ func buildRepoInfo(absPath, relPath string) RepoInfo {
 	info := RepoInfo{
 		Path:    relPath,
 		AbsPath: absPath,
-		Name:    filepath.Base(absPath),
+		Name:    strings.TrimSuffix(filepath.Base(absPath), ".tin"),
 	}
 
 	// Try to open and extract metadata (try working dir first, then bare)

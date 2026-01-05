@@ -191,7 +191,7 @@ func (s *WebServer) handleRepoPage(w http.ResponseWriter, r *http.Request, repoP
 	data := RepoPageData{
 		Title:          repoPath,
 		RepoPath:       repoPath,
-		RepoName:       filepath.Base(repoPath),
+		RepoName:       displayRepoName(repoPath),
 		Branches:       branches,
 		SelectedBranch: selectedBranch,
 		Commits:        commits,
@@ -282,7 +282,7 @@ func (s *WebServer) handleCommit(w http.ResponseWriter, r *http.Request, repoPat
 	data := CommitPageData{
 		Title:              "Commit " + commitID[:7],
 		RepoPath:           repoPath,
-		RepoName:           filepath.Base(repoPath),
+		RepoName:           displayRepoName(repoPath),
 		Commit:             commit,
 		Threads:            threads,
 		CodeHostURL:        codeHostURL,
@@ -382,7 +382,7 @@ func (s *WebServer) handleThread(w http.ResponseWriter, r *http.Request, repoPat
 	data := ThreadPageData{
 		Title:          "Thread " + threadID[:7],
 		RepoPath:       repoPath,
-		RepoName:       filepath.Base(repoPath),
+		RepoName:       displayRepoName(repoPath),
 		Thread:         thread,
 		ParentThread:   parentThread,
 		ChildThreads:   childThreads,
@@ -431,6 +431,13 @@ func isBareRepoPath(path string) bool {
 	}
 
 	return true
+}
+
+// displayRepoName returns a clean display name for a repository,
+// stripping the ".tin" extension if present
+func displayRepoName(repoPath string) string {
+	name := filepath.Base(repoPath)
+	return strings.TrimSuffix(name, ".tin")
 }
 
 // getCommitAgents returns the unique agents that contributed threads to a commit
