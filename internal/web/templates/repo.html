@@ -35,7 +35,6 @@
                 <th></th>
                 <th>ID</th>
                 <th>Message</th>
-                <th>Author</th>
                 <th>Date</th>
                 <th>Git</th>
             </tr>
@@ -59,8 +58,10 @@
                 <td>
                     {{if isMergeCommit .TinCommit}}<span class="merge-indicator" title="Merge commit">⑂</span>{{end}}<a href="/repo/{{$.RepoPath}}/commit/{{.ID}}" class="commit-hash">{{shortID .ID}}</a>
                 </td>
-                <td>{{truncate .Message 60}}</td>
-                <td>{{.Author}}</td>
+                <td>
+                    <a href="/repo/{{$.RepoPath}}/commit/{{.ID}}" class="commit-message-link">{{truncate .Message 60}}</a>
+                    {{if .Author}}<div class="commit-author">{{.Author}}</div>{{end}}
+                </td>
                 <td>{{formatTime .Timestamp}}</td>
                 <td>
                     {{$url := commitURL $.CodeHostURL .GitCommitHash}}
