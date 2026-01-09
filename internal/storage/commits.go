@@ -108,6 +108,10 @@ func (r *Repository) ReadBranch(name string) (string, error) {
 // WriteBranch writes a branch reference
 func (r *Repository) WriteBranch(name string, commitID string) error {
 	path := filepath.Join(r.TinPath, RefsDir, HeadsDir, name)
+	// Create parent directories if they don't exist (for branches like "feature/foo")
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
 	return os.WriteFile(path, []byte(commitID), 0644)
 }
 
