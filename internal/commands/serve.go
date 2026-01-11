@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -110,4 +112,76 @@ Examples:
   tin serve --root ~/tin-repos
   tin serve --host 0.0.0.0 --port 2323 --root /var/tin-repos
   tin serve --web --root ~/projects --port 8080`)
+}
+
+// ServeHTTP starts an HTTP server for the TIN protocol
+func ServeHTTP(args []string) error {
+	addr := ":8443"
+	rootPath := ""
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "-h", "--help":
+			printServeHTTPHelp()
+			return nil
+		case "--addr", "-a":
+			if i+1 < len(args) {
+				addr = args[i+1]
+				i++
+			}
+		case "--root":
+			if i+1 < len(args) {
+				rootPath = args[i+1]
+				i++
+			}
+		default:
+			if !strings.HasPrefix(args[i], "-") && rootPath == "" {
+				rootPath = args[i]
+			}
+		}
+	}
+
+	if rootPath == "" {
+		return fmt.Errorf("repository root path required (use --root)")
+	}
+
+	// Create HTTP handler with auto-create enabled
+	handler := remote.NewHTTPHandler(rootPath, true, nil)
+
+	log.Printf("tin HTTP server listening on %s", addr)
+	log.Printf("serving repositories under: %s", rootPath)
+	log.Printf("auto-create enabled: new repos will be created on push")
+	log.Printf("\nClient usage:")
+	log.Printf("  tin remote add origin https://localhost%s/user/repo", addr)
+	log.Printf("  tin config credentials add localhost%s th_yourtoken", addr)
+	log.Printf("  tin push origin main")
+
+	return http.ListenAndServe(addr, handler)
+}
+
+func printServeHTTPHelp() {
+	fmt.Println(`Usage: tin serve-http [options] [root-path]
+
+Start an HTTP server for the TIN protocol with Basic Auth.
+
+Options:
+  --addr, -a <addr>   Address to listen on (default: :8443)
+  --root <path>       Serve repositories under this root directory
+                      (repos are auto-created on push)
+
+Clients connect using HTTPS URLs and Basic Auth:
+  tin remote add origin https://host:port/user/repo
+  tin config credentials add host:port th_yourtoken
+  tin push origin main
+
+HTTP Endpoints:
+  POST /{repo-path}/tin-receive-pack  Push (receive data from client)
+  POST /{repo-path}/tin-upload-pack   Pull (send data to client)
+  POST /{repo-path}/tin-config        Get/set repository config
+
+Examples:
+  tin serve-http --root /var/tin-repos
+  tin serve-http --addr :8443 --root ~/tin-repos
+
+Note: For production, use a reverse proxy (nginx, caddy) for TLS termination.`)
 }

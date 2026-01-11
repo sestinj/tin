@@ -2,7 +2,6 @@ package remote
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/dadlerj/tin/internal/model"
 	"github.com/dadlerj/tin/internal/storage"
@@ -10,49 +9,60 @@ import (
 
 // Client handles connections to remote tin servers
 type Client struct {
-	conn net.Conn
-	pc   *ProtocolConn
-	url  *ParsedURL
+	transport Transport
+	url       *ParsedURL
 }
 
-// Dial connects to a remote tin server
-func Dial(rawURL string) (*Client, error) {
+// Dial connects to a remote tin server using the appropriate transport
+func Dial(rawURL string, creds *Credentials) (*Client, error) {
 	url, err := ParseURL(rawURL)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := net.Dial("tcp", url.Address())
+	var transport Transport
+
+	switch url.TransportType() {
+	case "https":
+		transport, err = NewHTTPSTransport(url, creds)
+	default: // "tcp"
+		transport, err = NewTCPTransport(url)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %s: %w", url.Address(), err)
+		return nil, err
 	}
 
 	return &Client{
-		conn: conn,
-		pc:   NewProtocolConn(conn),
-		url:  url,
+		transport: transport,
+		url:       url,
 	}, nil
+}
+
+// makeHello creates a HelloMessage
+// Note: Authentication is handled at the transport layer, not in the protocol
+func (c *Client) makeHello(operation string) HelloMessage {
+	return HelloMessage{
+		Version:   ProtocolVersion,
+		Operation: operation,
+		RepoPath:  c.url.Path,
+	}
 }
 
 // Close closes the connection
 func (c *Client) Close() error {
-	return c.conn.Close()
+	return c.transport.Close()
 }
 
 // Push pushes commits and threads to the remote and updates refs
 func (c *Client) Push(repo *storage.Repository, branch string, force bool) error {
 	// Send hello
-	hello := HelloMessage{
-		Version:   ProtocolVersion,
-		Operation: "push",
-		RepoPath:  c.url.Path,
-	}
-	if err := c.pc.Send(MsgHello, hello); err != nil {
+	if err := c.transport.Send(MsgHello, c.makeHello("push")); err != nil {
 		return fmt.Errorf("failed to send hello: %w", err)
 	}
 
 	// Receive refs
-	msg, err := c.pc.Receive()
+	msg, err := c.transport.Receive()
 	if err != nil {
 		return fmt.Errorf("failed to receive refs: %w", err)
 	}
@@ -145,7 +155,7 @@ func (c *Client) Push(repo *storage.Repository, branch string, force bool) error
 		Commits: commitsToSend,
 		Threads: threads,
 	}
-	if err := c.pc.Send(MsgPack, pack); err != nil {
+	if err := c.transport.Send(MsgPack, pack); err != nil {
 		return fmt.Errorf("failed to send pack: %w", err)
 	}
 
@@ -154,12 +164,12 @@ func (c *Client) Push(repo *storage.Repository, branch string, force bool) error
 		Updates: map[string]string{branch: localCommitID},
 		Force:   force,
 	}
-	if err := c.pc.Send(MsgUpdateRefs, updateRefs); err != nil {
+	if err := c.transport.Send(MsgUpdateRefs, updateRefs); err != nil {
 		return fmt.Errorf("failed to send update-refs: %w", err)
 	}
 
 	// Wait for response
-	msg, err = c.pc.Receive()
+	msg, err = c.transport.Receive()
 	if err != nil {
 		return fmt.Errorf("failed to receive response: %w", err)
 	}
@@ -176,22 +186,17 @@ func (c *Client) Push(repo *storage.Repository, branch string, force bool) error
 // GetConfig retrieves the remote repository's config
 func (c *Client) GetConfig() (*ConfigMessage, error) {
 	// Send hello
-	hello := HelloMessage{
-		Version:   ProtocolVersion,
-		Operation: "config",
-		RepoPath:  c.url.Path,
-	}
-	if err := c.pc.Send(MsgHello, hello); err != nil {
+	if err := c.transport.Send(MsgHello, c.makeHello("config")); err != nil {
 		return nil, fmt.Errorf("failed to send hello: %w", err)
 	}
 
 	// Send get-config request
-	if err := c.pc.Send(MsgGetConfig, GetConfigMessage{}); err != nil {
+	if err := c.transport.Send(MsgGetConfig, GetConfigMessage{}); err != nil {
 		return nil, fmt.Errorf("failed to send get-config: %w", err)
 	}
 
 	// Receive config
-	msg, err := c.pc.Receive()
+	msg, err := c.transport.Receive()
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive config: %w", err)
 	}
@@ -215,22 +220,17 @@ func (c *Client) GetConfig() (*ConfigMessage, error) {
 // SetConfig updates the remote repository's config
 func (c *Client) SetConfig(config *SetConfigMessage) error {
 	// Send hello
-	hello := HelloMessage{
-		Version:   ProtocolVersion,
-		Operation: "config",
-		RepoPath:  c.url.Path,
-	}
-	if err := c.pc.Send(MsgHello, hello); err != nil {
+	if err := c.transport.Send(MsgHello, c.makeHello("config")); err != nil {
 		return fmt.Errorf("failed to send hello: %w", err)
 	}
 
 	// Send set-config request
-	if err := c.pc.Send(MsgSetConfig, config); err != nil {
+	if err := c.transport.Send(MsgSetConfig, config); err != nil {
 		return fmt.Errorf("failed to send set-config: %w", err)
 	}
 
 	// Receive response
-	msg, err := c.pc.Receive()
+	msg, err := c.transport.Receive()
 	if err != nil {
 		return fmt.Errorf("failed to receive response: %w", err)
 	}
@@ -246,17 +246,12 @@ func (c *Client) SetConfig(config *SetConfigMessage) error {
 // Pull pulls commits and threads from the remote
 func (c *Client) Pull(repo *storage.Repository, branch string) (*RefsMessage, error) {
 	// Send hello
-	hello := HelloMessage{
-		Version:   ProtocolVersion,
-		Operation: "pull",
-		RepoPath:  c.url.Path,
-	}
-	if err := c.pc.Send(MsgHello, hello); err != nil {
+	if err := c.transport.Send(MsgHello, c.makeHello("pull")); err != nil {
 		return nil, fmt.Errorf("failed to send hello: %w", err)
 	}
 
 	// Receive refs
-	msg, err := c.pc.Receive()
+	msg, err := c.transport.Receive()
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive refs: %w", err)
 	}
@@ -321,12 +316,12 @@ func (c *Client) Pull(repo *storage.Repository, branch string) (*RefsMessage, er
 		ThreadIDs:      wantThreads,
 		ThreadVersions: wantThreadVersions,
 	}
-	if err := c.pc.Send(MsgWant, want); err != nil {
+	if err := c.transport.Send(MsgWant, want); err != nil {
 		return nil, fmt.Errorf("failed to send want: %w", err)
 	}
 
 	// Receive pack
-	msg, err = c.pc.Receive()
+	msg, err = c.transport.Receive()
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive pack: %w", err)
 	}
@@ -352,14 +347,14 @@ func (c *Client) Pull(repo *storage.Repository, branch string) (*RefsMessage, er
 		}
 	}
 	for _, commit := range pack.Commits {
-		c := commit
-		if err := repo.SaveCommit(&c); err != nil {
+		co := commit
+		if err := repo.SaveCommit(&co); err != nil {
 			return nil, fmt.Errorf("failed to save commit: %w", err)
 		}
 	}
 
 	// Send OK
-	c.pc.SendOK("received")
+	c.transport.Send(MsgOK, OKMessage{Message: "received"})
 
 	// Update local branch if specified
 	if branch != "" {

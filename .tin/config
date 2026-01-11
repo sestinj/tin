@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "remotes": [
+    {
+      "name": "origin",
+      "url": "52.90.157.114:2323/sestinj/tin.tin"
+    }
+  ],
+  "code_host_url": "https://github.com/sestinj/tin",
+  "thread_host_url": "http://52.90.157.114:8000"
+}

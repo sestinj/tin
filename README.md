@@ -53,7 +53,7 @@ You still get a normal git repo, but every commit now has a linked thread explai
 ## Quickstart
 
 ```bash
-go install github.com/dadlerj/tin/cmd/tin@latest
+go install github.com/sestinj/tin/cmd/tin@latest
 
 ######################
 # If using Amp
@@ -76,11 +76,33 @@ tin status                      # See pending threads
 tin commit -m "Added feature"   # Commit threads + code together
 ```
 
+## Claude Code Plugin
+
+Install the tin plugin for Claude Code to get:
+- **Auto-invoked skill**: Claude automatically uses `tin` instead of `git` for commits, checkouts, and pushes
+- **Slash commands**: `/tin:commit`, `/tin:branches`, `/tin:checkout`
+
+```bash
+# Install the plugin
+claude plugin add sestinj/tin
+
+# Or install from local clone
+git clone https://github.com/sestinj/tin.git
+claude plugin add ./tin
+```
+
+After installing the plugin, Claude will automatically:
+- Use `tin commit` instead of `git commit`
+- Use `tin checkout` instead of `git checkout`
+- Use `tin push` instead of `git push`
+
+This ensures all your commits are linked to conversation threads for code review context.
+
 ## The full `tin` workflow
 
 1. **Download and install `tin`, and initialize your repository**
 
-Run `go install github.com/dadlerj/tin/cmd/tin@latest`
+Run `go install github.com/sestinj/tin/cmd/tin@latest`
 
 Run `tin init` in your new project folder or existing git repo.
 

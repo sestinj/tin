@@ -325,7 +325,7 @@ func parseAmpMarkdown(markdown string, ampThreadID string) (*model.Thread, error
 					argsBytes = []byte(argsStr)
 				} else {
 					// Invalid JSON - store empty object with tool name hint
-					argsBytes = []byte(fmt.Sprintf(`{"_raw": "parse error"}`, toolName))
+					argsBytes = []byte(`{"_raw": "parse error"}`)
 				}
 			} else {
 				// Not JSON - store as empty

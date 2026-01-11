@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/danieladler/Dev/tin/tin/tin hook session-end",
+            "command": "tin hook session-end",
             "timeout": 30
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/danieladler/Dev/tin/tin/tin hook session-start",
+            "command": "tin hook session-start",
             "timeout": 30
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/danieladler/Dev/tin/tin/tin hook stop",
+            "command": "tin hook stop",
             "timeout": 30
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/danieladler/Dev/tin/tin/tin hook user-prompt",
+            "command": "tin hook user-prompt",
             "timeout": 30
           }
         ]

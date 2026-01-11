@@ -59,8 +59,18 @@ func Pull(args []string) error {
 	if err == nil {
 		fmt.Printf("Pulling tin from %s (%s)...\n", remoteName, remoteConfig.URL)
 
-		// Connect to remote
-		client, err := remote.Dial(remoteConfig.URL)
+		// Parse URL to get host for credential lookup
+		parsedURL, err := remote.ParseURL(remoteConfig.URL)
+		if err != nil {
+			return err
+		}
+
+		// Get credentials from store
+		credStore := remote.NewCredentialStore(repo.RootPath)
+		creds, _ := credStore.Get(parsedURL.Host)
+
+		// Connect to remote with credentials
+		client, err := remote.Dial(remoteConfig.URL, creds)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package hooks
+package claudecode
 
 import (
 	"encoding/json"
@@ -8,49 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 )
-
-// Slash command definitions as markdown content
-var slashCommands = map[string]string{
-	"branches": `---
-description: List all tin branches, marking the current one
-allowed-tools: Bash(tin branch:*)
----
-
-Run ` + "`tin branch`" + ` and display the output to show all branches. The current branch is marked with *.
-`,
-
-	"commit": `---
-description: Commit the current conversation thread to tin
-allowed-tools: Bash(tin commit:*), Bash(tin status:*)
-argument-hint: [message]
----
-
-Commit the staged tin threads.
-
-If $ARGUMENTS is provided, use it as the commit message:
-` + "```" + `
-tin commit -m "$ARGUMENTS"
-` + "```" + `
-
-If no message is provided, first run ` + "`tin status`" + ` to show what will be committed, then ask the user for a commit message before running the commit.
-`,
-
-	"checkout": `---
-description: Switch to a different tin branch
-allowed-tools: Bash(tin checkout:*), Bash(tin branch:*)
-argument-hint: [branch]
----
-
-Switch to a different tin branch.
-
-If $ARGUMENTS is provided, checkout that branch:
-` + "```" + `
-tin checkout $ARGUMENTS
-` + "```" + `
-
-If no branch name is provided, first run ` + "`tin branch`" + ` to show available branches, then ask the user which branch to checkout.
-`,
-}
 
 // ClaudeSettings represents the Claude Code settings.json structure
 type ClaudeSettings struct {
@@ -70,25 +27,28 @@ type HookConfig struct {
 	Timeout int    `json:"timeout,omitempty"`
 }
 
-// InstallClaudeCodeHooks installs tin hooks into Claude Code settings
-func InstallClaudeCodeHooks(projectDir string, global bool) error {
+// getSettingsPath returns the path to Claude Code settings.json
+func getSettingsPath(projectDir string, global bool) string {
+	if global {
+		homeDir, _ := os.UserHomeDir()
+		return filepath.Join(homeDir, ".claude", "settings.json")
+	}
+	return filepath.Join(projectDir, ".claude", "settings.json")
+}
+
+// InstallHooks installs tin hooks into Claude Code settings
+func InstallHooks(projectDir string, global bool, timeout int) error {
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
+
 	// Find tin binary path
 	tinPath, err := findTinBinary()
 	if err != nil {
 		return err
 	}
 
-	// Determine settings path
-	var settingsPath string
-	if global {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		settingsPath = filepath.Join(homeDir, ".claude", "settings.json")
-	} else {
-		settingsPath = filepath.Join(projectDir, ".claude", "settings.json")
-	}
+	settingsPath := getSettingsPath(projectDir, global)
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(settingsPath), 0755); err != nil {
@@ -102,7 +62,6 @@ func InstallClaudeCodeHooks(projectDir string, global bool) error {
 
 	if data, err := os.ReadFile(settingsPath); err == nil {
 		if err := json.Unmarshal(data, settings); err != nil {
-			// If parsing fails, start fresh but warn
 			fmt.Fprintf(os.Stderr, "Warning: Could not parse existing settings, creating new\n")
 			settings = &ClaudeSettings{
 				Hooks: make(map[string][]HookMatcher),
@@ -142,7 +101,7 @@ func InstallClaudeCodeHooks(projectDir string, global bool) error {
 				Hooks: []HookConfig{{
 					Type:    "command",
 					Command: hookCmd,
-					Timeout: 30,
+					Timeout: timeout,
 				}},
 			})
 		}
@@ -154,25 +113,12 @@ func InstallClaudeCodeHooks(projectDir string, global bool) error {
 		return err
 	}
 
-	if err := os.WriteFile(settingsPath, data, 0644); err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(settingsPath, data, 0644)
 }
 
-// UninstallClaudeCodeHooks removes tin hooks from Claude Code settings
-func UninstallClaudeCodeHooks(projectDir string, global bool) error {
-	var settingsPath string
-	if global {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		settingsPath = filepath.Join(homeDir, ".claude", "settings.json")
-	} else {
-		settingsPath = filepath.Join(projectDir, ".claude", "settings.json")
-	}
+// UninstallHooks removes tin hooks from Claude Code settings
+func UninstallHooks(projectDir string, global bool) error {
+	settingsPath := getSettingsPath(projectDir, global)
 
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
@@ -224,19 +170,68 @@ func UninstallClaudeCodeHooks(projectDir string, global bool) error {
 	return os.WriteFile(settingsPath, data, 0644)
 }
 
-// findTinBinary returns "tin" to use PATH resolution at runtime.
-// This ensures hooks work across different machines when the config is shared.
+// findTinBinary finds the absolute path to the tin binary
 func findTinBinary() (string, error) {
-	// Verify tin is available in PATH
-	if _, err := exec.LookPath("tin"); err != nil {
-		return "", fmt.Errorf("tin not found in PATH. Make sure it's installed and in your PATH")
+	// First, try to find in PATH
+	path, err := exec.LookPath("tin")
+	if err == nil {
+		return filepath.Abs(path)
 	}
-	return "tin", nil
+
+	// Try current executable
+	exe, err := os.Executable()
+	if err == nil {
+		return filepath.Abs(exe)
+	}
+
+	return "", fmt.Errorf("could not find tin binary. Make sure it's in your PATH")
+}
+
+// Slash command definitions
+var slashCommands = map[string]string{
+	"branches": `---
+description: List all tin branches, marking the current one
+allowed-tools: Bash(tin branch:*)
+---
+
+Run ` + "`tin branch`" + ` and display the output to show all branches. The current branch is marked with *.
+`,
+
+	"commit": `---
+description: Commit the current conversation thread to tin
+allowed-tools: Bash(tin commit:*), Bash(tin status:*)
+argument-hint: [message]
+---
+
+Commit the staged tin threads.
+
+If $ARGUMENTS is provided, use it as the commit message:
+` + "```" + `
+tin commit -m "$ARGUMENTS"
+` + "```" + `
+
+If no message is provided, first run ` + "`tin status`" + ` to show what will be committed, then ask the user for a commit message before running the commit.
+`,
+
+	"checkout": `---
+description: Switch to a different tin branch
+allowed-tools: Bash(tin checkout:*), Bash(tin branch:*)
+argument-hint: [branch]
+---
+
+Switch to a different tin branch.
+
+If $ARGUMENTS is provided, checkout that branch:
+` + "```" + `
+tin checkout $ARGUMENTS
+` + "```" + `
+
+If no branch name is provided, first run ` + "`tin branch`" + ` to show available branches, then ask the user which branch to checkout.
+`,
 }
 
 // InstallSlashCommands installs tin slash commands to Claude Code
 func InstallSlashCommands(projectDir string, global bool) error {
-	// Determine commands directory path
 	var commandsDir string
 	if global {
 		homeDir, err := os.UserHomeDir()
@@ -248,12 +243,10 @@ func InstallSlashCommands(projectDir string, global bool) error {
 		commandsDir = filepath.Join(projectDir, ".claude", "commands")
 	}
 
-	// Ensure directory exists
 	if err := os.MkdirAll(commandsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create commands directory: %w", err)
 	}
 
-	// Write each slash command file
 	for name, content := range slashCommands {
 		filePath := filepath.Join(commandsDir, name+".md")
 
@@ -262,10 +255,8 @@ func InstallSlashCommands(projectDir string, global bool) error {
 			if strings.Contains(string(existingData), "tin branch") ||
 				strings.Contains(string(existingData), "tin commit") ||
 				strings.Contains(string(existingData), "tin checkout") {
-				// Already installed, skip
 				continue
 			}
-			// File exists but isn't ours - don't overwrite
 			fmt.Fprintf(os.Stderr, "Warning: %s already exists and is not a tin command, skipping\n", filePath)
 			continue
 		}
@@ -280,7 +271,6 @@ func InstallSlashCommands(projectDir string, global bool) error {
 
 // UninstallSlashCommands removes tin slash commands from Claude Code
 func UninstallSlashCommands(projectDir string, global bool) error {
-	// Determine commands directory path
 	var commandsDir string
 	if global {
 		homeDir, err := os.UserHomeDir()
@@ -292,11 +282,9 @@ func UninstallSlashCommands(projectDir string, global bool) error {
 		commandsDir = filepath.Join(projectDir, ".claude", "commands")
 	}
 
-	// Remove each slash command file (only if it's our file)
 	for name := range slashCommands {
 		filePath := filepath.Join(commandsDir, name+".md")
 
-		// Check if file exists and is ours before removing
 		if data, err := os.ReadFile(filePath); err == nil {
 			if strings.Contains(string(data), "tin branch") ||
 				strings.Contains(string(data), "tin commit") ||

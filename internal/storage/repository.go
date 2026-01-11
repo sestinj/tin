@@ -36,12 +36,20 @@ type RemoteConfig struct {
 	URL  string `json:"url"`
 }
 
+// CredentialEntry represents stored credentials for a host
+type CredentialEntry struct {
+	Host  string `json:"host"`
+	Token string `json:"token"`
+}
+
 // Config holds tin configuration
 type Config struct {
-	Version       int            `json:"version"`
-	Remotes       []RemoteConfig `json:"remotes,omitempty"`
-	CodeHostURL   string         `json:"code_host_url,omitempty"`
-	ThreadHostURL string         `json:"thread_host_url,omitempty"` // Base URL for tin web viewer (e.g., https://tin.example.com)
+	Version       int               `json:"version"`
+	Remotes       []RemoteConfig    `json:"remotes,omitempty"`
+	CodeHostURL   string            `json:"code_host_url,omitempty"`
+	ThreadHostURL string            `json:"thread_host_url,omitempty"` // Base URL for tin web viewer (e.g., https://tin.example.com)
+	AuthToken     string            `json:"auth_token,omitempty"`      // Deprecated: use Credentials instead
+	Credentials   []CredentialEntry `json:"credentials,omitempty"`     // Per-host authentication tokens
 }
 
 // Index represents the staging area

@@ -1,3 +1,6 @@
-tin
-.tin/
+/tin
 .DS_Store
+
+# Tin - ignore thread data, but track config for team
+.tin/*
+!.tin/config

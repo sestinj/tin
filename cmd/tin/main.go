@@ -43,8 +43,12 @@ func main() {
 		err = commands.Hooks(args)
 	case "amp":
 		err = commands.Amp(args)
+	case "codex":
+		err = commands.Codex(args)
+	case "agents":
+		err = commands.Agents(args)
 	case "hook":
-		// Internal hook handlers (called by Claude Code hooks)
+		// Internal hook handlers (called by AI agent hooks)
 		err = commands.Hooks(args)
 	case "remote":
 		err = commands.Remote(args)
@@ -56,6 +60,8 @@ func main() {
 		err = commands.Pull(args)
 	case "serve":
 		err = commands.Serve(args)
+	case "serve-http":
+		err = commands.ServeHTTP(args)
 	case "config":
 		err = commands.Config(args)
 	case "version", "--version", "-v":
@@ -88,15 +94,20 @@ Commands:
   commit      Record changes to the repository
   log         Show commit history with thread summaries
   thread      Manage threads (list, show, start, append)
-  hooks       Manage Claude Code integration hooks
-  amp         Manage Amp agent integration (pull threads)
   sync        Synchronize tin and git branch state
+
+Agent integrations:
+  hooks       Manage hooks for AI agents (Claude Code, Cursor)
+  agents      List and manage agent integrations
+  amp         Manage AMP agent integration (pull threads)
+  codex       Manage Codex CLI integration (notifications)
 
 Remote commands:
   remote      Manage remote repositories
   push        Push commits and threads to remote
   pull        Pull commits and threads from remote
-  serve       Start a tin server
+  serve       Start a tin server (TCP protocol)
+  serve-http  Start a tin HTTP server (HTTPS with Basic Auth)
   config      View and modify configuration
 
 Options:

@@ -74,8 +74,8 @@ func Push(args []string) error {
 	if err == nil {
 		fmt.Printf("Pushing tin to %s (%s)...\n", remoteName, remoteConfig.URL)
 
-		// Connect to remote
-		client, err := remote.Dial(remoteConfig.URL)
+		// Connect to remote with auth
+		client, err := dialWithCredentials(remoteConfig.URL, repo)
 		if err != nil {
 			return err
 		}
@@ -98,6 +98,21 @@ func Push(args []string) error {
 	return nil
 }
 
+// dialWithCredentials creates a client with credentials from the credential store
+func dialWithCredentials(remoteURL string, repo *storage.Repository) (*remote.Client, error) {
+	// Parse URL to get host for credential lookup
+	parsedURL, err := remote.ParseURL(remoteURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get credentials from store
+	credStore := remote.NewCredentialStore(repo.RootPath)
+	creds, _ := credStore.Get(parsedURL.Host)
+
+	return remote.Dial(remoteURL, creds)
+}
+
 // syncCodeHostURL ensures the remote tin repo has the correct code_host_url
 func syncCodeHostURL(repo *storage.Repository, remoteURL, remoteName string) error {
 	// Get local git remote URL
@@ -117,7 +132,7 @@ func syncCodeHostURL(repo *storage.Repository, remoteURL, remoteName string) err
 	}
 
 	// Connect to remote to check its config
-	configClient, err := remote.Dial(remoteURL)
+	configClient, err := dialWithCredentials(remoteURL, repo)
 	if err != nil {
 		return fmt.Errorf("failed to connect for config sync: %w", err)
 	}
@@ -132,7 +147,7 @@ func syncCodeHostURL(repo *storage.Repository, remoteURL, remoteName string) err
 	if remoteConfigData.CodeHostURL == "" {
 		// Remote has no URL, set it
 		fmt.Printf("Setting remote code_host_url to %s\n", localBaseURL)
-		setClient, err := remote.Dial(remoteURL)
+		setClient, err := dialWithCredentials(remoteURL, repo)
 		if err != nil {
 			return err
 		}
@@ -156,7 +171,7 @@ func syncCodeHostURL(repo *storage.Repository, remoteURL, remoteName string) err
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	if response == "y" || response == "yes" {
-		setClient, err := remote.Dial(remoteURL)
+		setClient, err := dialWithCredentials(remoteURL, repo)
 		if err != nil {
 			return err
 		}

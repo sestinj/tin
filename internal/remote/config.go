@@ -14,9 +14,20 @@ type RemoteConfig struct {
 
 // ParsedURL represents a parsed remote URL
 type ParsedURL struct {
-	Host string
-	Port string
-	Path string
+	Scheme string // "https", "tin", or "" (defaults to tcp)
+	Host   string
+	Port   string
+	Path   string
+}
+
+// TransportType returns the transport type for this URL
+func (p *ParsedURL) TransportType() string {
+	switch p.Scheme {
+	case "https":
+		return "https"
+	default:
+		return "tcp"
+	}
 }
 
 // ParseURL parses a remote URL in the format host:port/path or host/path
@@ -24,8 +35,28 @@ type ParsedURL struct {
 //   - localhost:2323/tmp/myproject.tin
 //   - example.com:2323/repos/project.tin
 //   - example.com/repos/project.tin (default port 2323)
+//   - https://tinhub.dev/user/repo
+//   - tin://example.com:2323/repos/project.tin
 func ParseURL(rawURL string) (*ParsedURL, error) {
-	// Handle URLs with scheme
+	// Handle HTTPS URLs
+	if strings.HasPrefix(rawURL, "https://") {
+		u, err := url.Parse(rawURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URL: %w", err)
+		}
+		port := u.Port()
+		if port == "" {
+			port = "443"
+		}
+		return &ParsedURL{
+			Scheme: "https",
+			Host:   u.Hostname(),
+			Port:   port,
+			Path:   u.Path,
+		}, nil
+	}
+
+	// Handle tin:// URLs
 	if strings.HasPrefix(rawURL, "tin://") {
 		u, err := url.Parse(rawURL)
 		if err != nil {
@@ -36,9 +67,10 @@ func ParseURL(rawURL string) (*ParsedURL, error) {
 			port = "2323"
 		}
 		return &ParsedURL{
-			Host: u.Hostname(),
-			Port: port,
-			Path: u.Path,
+			Scheme: "tin",
+			Host:   u.Hostname(),
+			Port:   port,
+			Path:   u.Path,
 		}, nil
 	}
 
@@ -68,9 +100,10 @@ func ParseURL(rawURL string) (*ParsedURL, error) {
 	}
 
 	return &ParsedURL{
-		Host: host,
-		Port: port,
-		Path: path,
+		Scheme: "",
+		Host:   host,
+		Port:   port,
+		Path:   path,
 	}, nil
 }
 

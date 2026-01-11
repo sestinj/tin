@@ -34,11 +34,18 @@ type Message struct {
 	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
+// AuthInfo contains authentication credentials
+type AuthInfo struct {
+	Type  string `json:"type"`  // "token"
+	Token string `json:"token"` // the auth token (e.g., "th_xxx")
+}
+
 // HelloMessage initiates the connection
 type HelloMessage struct {
-	Version   int    `json:"version"`
-	Operation string `json:"operation"` // "push" or "pull"
-	RepoPath  string `json:"repo_path"` // path to repository on server
+	Version   int       `json:"version"`
+	Operation string    `json:"operation"` // "push" or "pull"
+	RepoPath  string    `json:"repo_path"` // path to repository on server
+	Auth      *AuthInfo `json:"auth,omitempty"`
 }
 
 // RefsMessage advertises refs and object IDs
