@@ -4,7 +4,19 @@ Thread-based version control for conversational coding. Wraps git, treating conv
 
 ## Important: Use Tin Commands
 
-**Always use built-in tin commands instead of directly modifying `.tin/` storage on disk.** For example:
+**Always use built-in tin commands instead of git commands or directly modifying `.tin/` storage on disk.**
+
+### Committing: Use `tin commit`, NOT `git commit`
+
+When committing changes in a tin repository, **always use `tin commit`** (or the `/commit` slash command). The `tin commit` command:
+1. Automatically stages all changed files to git
+2. Creates a git commit with thread metadata in the message
+3. Creates a tin commit linking the conversation thread to the code
+4. Updates the thread status
+
+Using `git commit` directly will lose the thread context and break the tin workflow.
+
+### Other examples:
 - Use `tin thread delete` instead of `rm .tin/threads/<id>.json`
 - Use `tin add --unstage` instead of editing `.tin/index.json`
 
