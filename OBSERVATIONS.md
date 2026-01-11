@@ -11,3 +11,20 @@ When trying to commit only a specific thread (while others were staged), there w
 Workaround: Edit `.tin/index.json` directly to remove unwanted staged threads.
 
 Expected: `tin add --unstage <thread-id>` or a separate `tin unstage <thread-id>` command.
+
+---
+
+**Conversational threads have no git history**
+
+When a thread is purely conversational (no code changes), `tin commit` creates a tin commit but no git commit. Multiple tin commits can point to the same git hash. This means:
+
+1. These threads are invisible in `git log` - only visible via `tin log`
+2. If `.tin/` isn't pushed or gets lost, there's no record these discussions happened
+3. The "tin wraps git" mental model breaks down - some tin history exists outside git
+
+This could be a problem for important design discussions, architectural decisions, or planning threads that don't directly produce code but are valuable context for understanding why code exists.
+
+Possible solutions:
+- Create empty git commits for thread-only tin commits (with thread metadata in commit message)
+- Store thread references in a git-tracked manifest file
+- Accept this as intentional (threads without code changes are ephemeral)
