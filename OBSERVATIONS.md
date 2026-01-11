@@ -28,3 +28,16 @@ Possible solutions:
 - Create empty git commits for thread-only tin commits (with thread metadata in commit message)
 - Store thread references in a git-tracked manifest file
 - Accept this as intentional (threads without code changes are ephemeral)
+
+---
+
+**Missing `tin remote set-url` subcommand**
+
+When needing to change a remote URL (e.g., from `tinhub.dev` to an IP address), there's no `set-url` subcommand like git has. Had to remove and re-add the remote:
+
+```bash
+tin remote remove origin
+tin remote add origin 52.90.157.114:2323/sestinj/tin.tin
+```
+
+Expected: `tin remote set-url origin <new-url>` to match git's interface.

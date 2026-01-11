@@ -81,4 +81,12 @@ go build -o tin ./cmd/tin
 
 ## Feedback: Test Driving Tin
 
-We are test driving `tin`, which means it is really important to collect feedback on how it works in real-world situations, and whether the workflow is ergonomic. If you ever come across small bugs, workflow issues, awkward details, or even just situations where the mental model doesn't make sense or you are running too many commands repeatedly, log these observations in a file called `OBSERVATIONS.md`. It should be a markdown file, section-separated by `---` between each observation. The observations should be concise descriptions of what was noticed.
+We are test driving `tin`, which means it is really important to collect feedback on how it works in real-world situations, and whether the workflow is ergonomic. Log observations to `OBSERVATIONS.md` whenever you encounter:
+
+- **Errors or missing commands** (e.g., `unknown subcommand` errors, missing flags)
+- **Workflow friction** (e.g., needing multiple commands for what should be one operation)
+- **Mental model mismatches** (e.g., behavior that doesn't match git conventions)
+- **Bugs or unexpected behavior**
+- **Awkward UX** (e.g., confusing output, missing help text)
+
+**Important:** Log observations immediately when encountered, don't wait until later. Use `---` to separate each observation. Be concise but include the actual error/command that triggered the observation.
