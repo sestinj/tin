@@ -132,9 +132,37 @@ See [all `tin` commands](COMMANDS.md).
 
 ### `tin` server and web viewer
 
-`tin` ships with a `tin serve` command that starts a remote server that can accept `tin push`es and `tin pull`s. Use `tin remote` to point to the remote server.
+`tin` ships with server commands for hosting remote repositories:
 
-`tin` also provides a simple web viewer to see tin repositories, commits, and threads. Run `tin serve --web --port 8080` to view it.
+```bash
+# TCP server (for local networks or trusted environments)
+tin serve --root ~/tin-repos                    # Serve repos on port 2323
+tin serve --root ~/tin-repos --host 0.0.0.0     # Listen on all interfaces
+
+# HTTP server with Basic Auth (for production)
+tin serve-http --root ~/tin-repos --auth admin:secrettoken
+tin serve-http --root ~/tin-repos --auth alice:pass1 --auth bob:pass2
+
+# Or configure auth via environment variable
+TIN_SERVER_AUTH=alice:pass1,bob:pass2 tin serve-http --root ~/tin-repos
+```
+
+Client setup:
+```bash
+# For TCP server
+tin remote add origin localhost:2323/myproject.tin
+tin push origin main
+
+# For HTTP server
+tin remote add origin https://host:8443/myproject.tin
+tin config credentials add host:8443 admin:secrettoken
+tin push origin main
+```
+
+`tin` also provides a simple web viewer to see repositories, commits, and threads:
+```bash
+tin serve --web --root ~/projects --port 8080
+```
 
 **The tin web commits page**
 
