@@ -76,3 +76,7 @@ Threads are deduplicated by Amp thread ID (stored in `AgentSessionID`).
 ```bash
 go build -o tin ./cmd/tin
 ```
+
+## Feedback: Test Driving Tin
+
+We are test driving `tin`, which means it is really important to collect feedback on how it works in real-world situations, and whether the workflow is ergonomic. If you ever come across small bugs, workflow issues, awkward details, or even just situations where the mental model doesn't make sense or you are running too many commands repeatedly, log these observations in a file called `OBSERVATIONS.md`. It should be a markdown file, section-separated by `---` between each observation. The observations should be concise descriptions of what was noticed.
