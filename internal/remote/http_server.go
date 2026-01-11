@@ -28,6 +28,33 @@ func (v *AllowAllAuthValidator) Validate(username, password string) (string, boo
 	return username, true
 }
 
+// TokenAuthValidator validates against a preset list of username/password pairs
+type TokenAuthValidator struct {
+	// credentials maps username to password
+	credentials map[string]string
+}
+
+// NewTokenAuthValidator creates a validator with the given username/password pairs
+func NewTokenAuthValidator(creds map[string]string) *TokenAuthValidator {
+	return &TokenAuthValidator{
+		credentials: creds,
+	}
+}
+
+func (v *TokenAuthValidator) Validate(username, password string) (string, bool) {
+	if v.credentials == nil {
+		return "", false
+	}
+	expectedPassword, exists := v.credentials[username]
+	if !exists {
+		return "", false
+	}
+	if expectedPassword != password {
+		return "", false
+	}
+	return username, true
+}
+
 // HTTPHandler handles HTTP requests for the TIN protocol
 type HTTPHandler struct {
 	rootPath      string
