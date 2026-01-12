@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tin-marketplace",
+  "description": "Thread-based version control for conversational coding. Links AI conversation threads to git commits for code review context.",
+  "owner": {
+    "name": "sestinj",
+    "url": "https://github.com/sestinj/tin"
+  },
+  "plugins": [
+    {
+      "name": "tin",
+      "description": "Thread-based version control for conversational coding. Wraps git to link AI conversation threads to commits, giving PR reviewers full context on why changes were made.",
+      "version": "1.0.0",
+      "author": {
+        "name": "sestinj"
+      },
+      "source": ".",
+      "category": "productivity",
+      "tags": ["git", "version-control", "code-review", "conversations"],
+      "homepage": "https://github.com/sestinj/tin"
+    }
+  ]
+}
