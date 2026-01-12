@@ -95,10 +95,31 @@ func (h *Handler) HandleNotification(event *agents.NotifyEvent) error {
 		return err
 	}
 
-	// Add messages from the notification
-	for _, inputMsg := range payload.InputMessages {
+	// Track old ID before adding messages (first message changes the thread ID)
+	oldThreadID := thread.ID
+
+	// Count existing human messages to avoid duplicates
+	// (Codex sends ALL input messages on each notification, not just new ones)
+	existingHumanCount := 0
+	for _, m := range thread.Messages {
+		if m.Role == model.RoleHuman {
+			existingHumanCount++
+		}
+	}
+
+	// Only add new messages (those beyond what we've already stored)
+	for i, inputMsg := range payload.InputMessages {
+		if i < existingHumanCount {
+			continue // Already have this message
+		}
 		msg := model.NewMessage(model.RoleHuman, inputMsg, "", nil)
 		thread.AddMessage(msg)
+	}
+
+	// If thread ID changed (first message was added), clean up old temp thread
+	if thread.ID != oldThreadID {
+		repo.DeleteThread(oldThreadID)
+		repo.UnstageThread(oldThreadID)
 	}
 
 	if payload.LastAssistantMessage != "" {

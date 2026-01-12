@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/dadlerj/tin/internal/agents"
+	"github.com/dadlerj/tin/internal/model"
+	"github.com/dadlerj/tin/internal/storage"
 )
 
 func TestHandler_Info(t *testing.T) {
@@ -185,6 +187,144 @@ func TestMin(t *testing.T) {
 		got := min(tt.a, tt.b)
 		if got != tt.want {
 			t.Errorf("min(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func TestHandler_HandleNotification_NoDuplicateMessages(t *testing.T) {
+	// Setup: create a temp tin repo
+	tmpDir := t.TempDir()
+	_, err := storage.Init(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to init tin repo: %v", err)
+	}
+
+	handler := NewHandler(nil)
+	threadID := "test-thread-123"
+
+	// First notification: user sends "testing"
+	payload1 := CodexNotifyPayload{
+		Type:                 "agent-turn-complete",
+		ThreadID:             threadID,
+		TurnID:               "turn-1",
+		Cwd:                  tmpDir,
+		InputMessages:        []string{"testing"},
+		LastAssistantMessage: "Got your test!",
+	}
+	data1, _ := json.Marshal(payload1)
+	event1 := &agents.NotifyEvent{
+		Type:       agents.NotifyEventTurnComplete,
+		SessionID:  threadID,
+		Cwd:        tmpDir,
+		RawPayload: data1,
+	}
+
+	if err := handler.HandleNotification(event1); err != nil {
+		t.Fatalf("first notification failed: %v", err)
+	}
+
+	// Second notification: user sends "wow" (Codex includes ALL previous messages)
+	payload2 := CodexNotifyPayload{
+		Type:                 "agent-turn-complete",
+		ThreadID:             threadID,
+		TurnID:               "turn-2",
+		Cwd:                  tmpDir,
+		InputMessages:        []string{"testing", "wow"}, // Codex sends all messages
+		LastAssistantMessage: "Nice!",
+	}
+	data2, _ := json.Marshal(payload2)
+	event2 := &agents.NotifyEvent{
+		Type:       agents.NotifyEventTurnComplete,
+		SessionID:  threadID,
+		Cwd:        tmpDir,
+		RawPayload: data2,
+	}
+
+	if err := handler.HandleNotification(event2); err != nil {
+		t.Fatalf("second notification failed: %v", err)
+	}
+
+	// Third notification: user sends "tell a story"
+	payload3 := CodexNotifyPayload{
+		Type:                 "agent-turn-complete",
+		ThreadID:             threadID,
+		TurnID:               "turn-3",
+		Cwd:                  tmpDir,
+		InputMessages:        []string{"testing", "wow", "tell a story"}, // All messages again
+		LastAssistantMessage: "Once upon a time...",
+	}
+	data3, _ := json.Marshal(payload3)
+	event3 := &agents.NotifyEvent{
+		Type:       agents.NotifyEventTurnComplete,
+		SessionID:  threadID,
+		Cwd:        tmpDir,
+		RawPayload: data3,
+	}
+
+	if err := handler.HandleNotification(event3); err != nil {
+		t.Fatalf("third notification failed: %v", err)
+	}
+
+	// Verify: load the thread and check message count
+	repo, err := storage.Open(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to open repo: %v", err)
+	}
+
+	threads, err := repo.FindThreadsBySessionID(threadID)
+	if err != nil {
+		t.Fatalf("failed to find thread: %v", err)
+	}
+	if len(threads) == 0 {
+		t.Fatal("thread not found")
+	}
+
+	thread := threads[0]
+
+	// Count messages by role
+	humanCount := 0
+	assistantCount := 0
+	for _, msg := range thread.Messages {
+		if msg.Role == model.RoleHuman {
+			humanCount++
+		} else if msg.Role == model.RoleAssistant {
+			assistantCount++
+		}
+	}
+
+	// Should have exactly 3 human messages (not 6 from duplicates)
+	if humanCount != 3 {
+		t.Errorf("expected 3 human messages, got %d", humanCount)
+	}
+
+	// Should have exactly 3 assistant messages
+	if assistantCount != 3 {
+		t.Errorf("expected 3 assistant messages, got %d", assistantCount)
+	}
+
+	// Verify message order and content
+	expectedMessages := []struct {
+		role    model.Role
+		content string
+	}{
+		{model.RoleHuman, "testing"},
+		{model.RoleAssistant, "Got your test!"},
+		{model.RoleHuman, "wow"},
+		{model.RoleAssistant, "Nice!"},
+		{model.RoleHuman, "tell a story"},
+		{model.RoleAssistant, "Once upon a time..."},
+	}
+
+	if len(thread.Messages) != len(expectedMessages) {
+		t.Fatalf("expected %d messages, got %d", len(expectedMessages), len(thread.Messages))
+	}
+
+	for i, expected := range expectedMessages {
+		if thread.Messages[i].Role != expected.role {
+			t.Errorf("message %d: expected role %s, got %s", i, expected.role, thread.Messages[i].Role)
+		}
+		if thread.Messages[i].Content != expected.content {
+			t.Errorf("message %d: expected content %q, got %q", i, expected.content, thread.Messages[i].Content)
 		}
 	}
 }
