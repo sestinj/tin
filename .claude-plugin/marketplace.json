@@ -14,7 +14,7 @@
       "author": {
         "name": "sestinj"
       },
-      "source": ".",
+      "source": "./",
       "category": "productivity",
       "tags": ["git", "version-control", "code-review", "conversations"],
       "homepage": "https://github.com/sestinj/tin"
