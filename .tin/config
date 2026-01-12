@@ -3,7 +3,7 @@
   "remotes": [
     {
       "name": "origin",
-      "url": "52.90.157.114:2323/sestinj/tin.tin"
+      "url": "https://tinhub.exe.xyz:8443/sestinj/tin"
     }
   ],
   "code_host_url": "https://github.com/sestinj/tin",
