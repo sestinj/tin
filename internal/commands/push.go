@@ -98,7 +98,8 @@ func Push(args []string) error {
 	return nil
 }
 
-// dialWithCredentials creates a client with credentials from the credential store
+// dialWithCredentials creates a client with credentials from the credential store.
+// If no credentials are found, it prompts the user interactively (like git).
 func dialWithCredentials(remoteURL string, repo *storage.Repository) (*remote.Client, error) {
 	// Parse URL to get host for credential lookup
 	parsedURL, err := remote.ParseURL(remoteURL)
@@ -106,11 +107,63 @@ func dialWithCredentials(remoteURL string, repo *storage.Repository) (*remote.Cl
 		return nil, err
 	}
 
-	// Get credentials from store (use Address() for host:port format)
+	host := parsedURL.Address()
 	credStore := remote.NewCredentialStore()
-	creds, _ := credStore.Get(parsedURL.Address())
+	creds, _ := credStore.Get(host)
 
-	return remote.Dial(remoteURL, creds)
+	// If no credentials found, prompt the user
+	if creds == nil {
+		creds, err = promptForCredentials(host, credStore)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Try to connect
+	client, err := remote.Dial(remoteURL, creds)
+	if err != nil {
+		// Check if it's an auth error - if so, prompt for new credentials
+		if strings.Contains(err.Error(), "401") || strings.Contains(err.Error(), "Unauthorized") {
+			fmt.Println("Authentication failed. Please enter new credentials.")
+			creds, err = promptForCredentials(host, credStore)
+			if err != nil {
+				return nil, err
+			}
+			return remote.Dial(remoteURL, creds)
+		}
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// promptForCredentials interactively prompts the user for credentials and stores them
+func promptForCredentials(host string, credStore *remote.CredentialStore) (*remote.Credentials, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("Username for '%s': ", host)
+	username, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read username: %w", err)
+	}
+	username = strings.TrimSpace(username)
+
+	fmt.Printf("Token for '%s@%s': ", username, host)
+	token, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token: %w", err)
+	}
+	token = strings.TrimSpace(token)
+
+	// Store credentials for future use
+	if err := credStore.Store(host, username, token); err != nil {
+		fmt.Printf("Warning: failed to save credentials: %v\n", err)
+	}
+
+	return &remote.Credentials{
+		Username: username,
+		Password: token,
+	}, nil
 }
 
 // syncCodeHostURL ensures the remote tin repo has the correct code_host_url

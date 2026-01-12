@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/remote"
 	"github.com/dadlerj/tin/internal/storage"
 )
 
@@ -59,18 +58,8 @@ func Pull(args []string) error {
 	if err == nil {
 		fmt.Printf("Pulling tin from %s (%s)...\n", remoteName, remoteConfig.URL)
 
-		// Parse URL to get host for credential lookup
-		parsedURL, err := remote.ParseURL(remoteConfig.URL)
-		if err != nil {
-			return err
-		}
-
-		// Get credentials from store (use Address() for host:port format)
-		credStore := remote.NewCredentialStore()
-		creds, _ := credStore.Get(parsedURL.Address())
-
-		// Connect to remote with credentials
-		client, err := remote.Dial(remoteConfig.URL, creds)
+		// Connect to remote with auth (prompts for credentials if needed)
+		client, err := dialWithCredentials(remoteConfig.URL, repo)
 		if err != nil {
 			return err
 		}
