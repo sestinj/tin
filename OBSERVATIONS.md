@@ -73,3 +73,7 @@ error: git push failed: fatal: 'tinhub' does not appear to be a git repository
 Workaround: Use matching names for git and tin remotes.
 
 Question: Should tin support separate git/tin remote names? e.g., `tin push --git-remote origin --tin-remote tinhub main`
+
+---
+
+When I `tin commit` and then afterward ask a few follow up questions in those same sessions, it causes there to be unstaged threads that feel messy and aren't necessarily related to whatever next commit I make, but they will be bound to be committed along with the next set of changes
