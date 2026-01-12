@@ -8,146 +8,156 @@ import (
 
 // CredentialEntry represents stored credentials for a host
 type CredentialEntry struct {
-	Host  string `json:"host"`
-	Token string `json:"token"`
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-// CredentialStore manages credentials for remote operations
-type CredentialStore struct {
-	repoPath string
-}
+// CredentialStore manages credentials for remote operations.
+// Credentials are stored globally in ~/.config/tin/credentials (not in repo)
+// to avoid accidentally committing secrets.
+type CredentialStore struct{}
 
-// NewCredentialStore creates a new credential store for the given repository
-func NewCredentialStore(repoPath string) *CredentialStore {
-	return &CredentialStore{
-		repoPath: repoPath,
-	}
+// NewCredentialStore creates a new credential store
+func NewCredentialStore() *CredentialStore {
+	return &CredentialStore{}
 }
 
 // Get retrieves credentials for the given host.
 // It checks in order:
-// 1. TIN_AUTH_TOKEN environment variable
-// 2. Per-host credentials in .tin/config
-// 3. Legacy auth_token in .tin/config (for backward compatibility)
+// 1. TIN_AUTH environment variable (format: "username:password")
+// 2. Per-host credentials in ~/.config/tin/credentials
 func (s *CredentialStore) Get(host string) (*Credentials, error) {
 	// 1. Check environment variable (highest priority)
+	if auth := os.Getenv("TIN_AUTH"); auth != "" {
+		return parseAuthString(auth), nil
+	}
+
+	// Legacy env var support
 	if token := os.Getenv("TIN_AUTH_TOKEN"); token != "" {
-		return &Credentials{
-			Username: "x-token-auth",
-			Password: token,
-		}, nil
+		return parseAuthString(token), nil
 	}
 
-	// 2. Check per-host credentials in config
-	config, err := s.readConfig()
+	// 2. Check per-host credentials in global config
+	entries, err := s.readCredentials()
 	if err != nil {
-		return nil, nil // No config file, no credentials
+		return nil, nil // No credentials file
 	}
 
-	// Look for matching host
-	for _, entry := range config.Credentials {
+	for _, entry := range entries {
 		if entry.Host == host {
 			return &Credentials{
-				Username: "x-token-auth",
-				Password: entry.Token,
+				Username: entry.Username,
+				Password: entry.Password,
 			}, nil
 		}
-	}
-
-	// 3. Fall back to legacy auth_token (backward compatibility)
-	if config.AuthToken != "" {
-		return &Credentials{
-			Username: "x-token-auth",
-			Password: config.AuthToken,
-		}, nil
 	}
 
 	return nil, nil // No credentials found
 }
 
 // Store saves credentials for the given host
-func (s *CredentialStore) Store(host, token string) error {
-	config, err := s.readConfig()
-	if err != nil {
-		// Create new config if it doesn't exist
-		config = &configFile{
-			Version:     1,
-			Credentials: []CredentialEntry{},
-		}
-	}
+func (s *CredentialStore) Store(host, username, password string) error {
+	entries, _ := s.readCredentials() // Ignore error, start fresh if needed
 
 	// Update or add entry
 	found := false
-	for i, entry := range config.Credentials {
+	for i, entry := range entries {
 		if entry.Host == host {
-			config.Credentials[i].Token = token
+			entries[i].Username = username
+			entries[i].Password = password
 			found = true
 			break
 		}
 	}
 	if !found {
-		config.Credentials = append(config.Credentials, CredentialEntry{
-			Host:  host,
-			Token: token,
+		entries = append(entries, CredentialEntry{
+			Host:     host,
+			Username: username,
+			Password: password,
 		})
 	}
 
-	return s.writeConfig(config)
+	return s.writeCredentials(entries)
 }
 
 // Remove removes credentials for the given host
 func (s *CredentialStore) Remove(host string) error {
-	config, err := s.readConfig()
+	entries, err := s.readCredentials()
 	if err != nil {
-		return nil // No config, nothing to remove
+		return nil // No credentials, nothing to remove
 	}
 
-	// Find and remove entry
-	newCreds := make([]CredentialEntry, 0, len(config.Credentials))
-	for _, entry := range config.Credentials {
+	newEntries := make([]CredentialEntry, 0, len(entries))
+	for _, entry := range entries {
 		if entry.Host != host {
-			newCreds = append(newCreds, entry)
+			newEntries = append(newEntries, entry)
 		}
 	}
-	config.Credentials = newCreds
 
-	return s.writeConfig(config)
+	return s.writeCredentials(newEntries)
 }
 
-// configFile represents the .tin/config file structure
-// This is a local copy to avoid circular imports with storage package
-type configFile struct {
-	Version       int               `json:"version"`
-	Remotes       []json.RawMessage `json:"remotes,omitempty"`
-	CodeHostURL   string            `json:"code_host_url,omitempty"`
-	ThreadHostURL string            `json:"thread_host_url,omitempty"`
-	AuthToken     string            `json:"auth_token,omitempty"`
-	Credentials   []CredentialEntry `json:"credentials,omitempty"`
+// List returns all stored credentials (with passwords masked)
+func (s *CredentialStore) List() ([]CredentialEntry, error) {
+	return s.readCredentials()
 }
 
-func (s *CredentialStore) configPath() string {
-	return filepath.Join(s.repoPath, ".tin", "config")
+// credentialsPath returns the global credentials file path
+func (s *CredentialStore) credentialsPath() string {
+	// Use ~/.config/tin/credentials (XDG-style)
+	configDir := os.Getenv("XDG_CONFIG_HOME")
+	if configDir == "" {
+		home, _ := os.UserHomeDir()
+		configDir = filepath.Join(home, ".config")
+	}
+	return filepath.Join(configDir, "tin", "credentials")
 }
 
-func (s *CredentialStore) readConfig() (*configFile, error) {
-	data, err := os.ReadFile(s.configPath())
+func (s *CredentialStore) readCredentials() ([]CredentialEntry, error) {
+	data, err := os.ReadFile(s.credentialsPath())
 	if err != nil {
 		return nil, err
 	}
 
-	var config configFile
-	if err := json.Unmarshal(data, &config); err != nil {
+	var entries []CredentialEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return entries, nil
 }
 
-func (s *CredentialStore) writeConfig(config *configFile) error {
-	data, err := json.MarshalIndent(config, "", "  ")
+func (s *CredentialStore) writeCredentials(entries []CredentialEntry) error {
+	path := s.credentialsPath()
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(entries, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(s.configPath(), data, 0600)
+	// Write with restricted permissions (user-only)
+	return os.WriteFile(path, data, 0600)
+}
+
+// parseAuthString parses "username:password" or just "password" format
+func parseAuthString(auth string) *Credentials {
+	for i, c := range auth {
+		if c == ':' {
+			return &Credentials{
+				Username: auth[:i],
+				Password: auth[i+1:],
+			}
+		}
+	}
+	// No colon - treat as password with default username
+	return &Credentials{
+		Username: "x-token-auth",
+		Password: auth,
+	}
 }

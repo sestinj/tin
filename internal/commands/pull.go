@@ -66,7 +66,7 @@ func Pull(args []string) error {
 		}
 
 		// Get credentials from store
-		credStore := remote.NewCredentialStore(repo.RootPath)
+		credStore := remote.NewCredentialStore()
 		creds, _ := credStore.Get(parsedURL.Host)
 
 		// Connect to remote with credentials

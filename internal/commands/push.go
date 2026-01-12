@@ -107,7 +107,7 @@ func dialWithCredentials(remoteURL string, repo *storage.Repository) (*remote.Cl
 	}
 
 	// Get credentials from store
-	credStore := remote.NewCredentialStore(repo.RootPath)
+	credStore := remote.NewCredentialStore()
 	creds, _ := credStore.Get(parsedURL.Host)
 
 	return remote.Dial(remoteURL, creds)

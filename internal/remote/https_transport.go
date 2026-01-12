@@ -22,6 +22,7 @@ type HTTPSTransport struct {
 	baseURL   string
 	creds     *Credentials
 	operation string // Set from HelloMessage
+	repoPath  string // Set from HelloMessage (not used for HTTP, but stored)
 
 	// Message buffering for request/response batching
 	sendBuf []Message
@@ -70,12 +71,16 @@ func (t *HTTPSTransport) Send(msgType MessageType, payload any) error {
 		Payload: payloadBytes,
 	}
 
-	// Extract operation from hello message
+	// Extract operation from hello message but don't send it
+	// (HTTP uses endpoints to determine operation, not Hello message)
 	if msgType == MsgHello {
 		var hello HelloMessage
 		if err := json.Unmarshal(payloadBytes, &hello); err == nil {
 			t.operation = hello.Operation
+			t.repoPath = hello.RepoPath
 		}
+		// Don't buffer Hello for HTTP - the endpoint indicates the operation
+		return nil
 	}
 
 	t.sendBuf = append(t.sendBuf, msg)
@@ -93,9 +98,7 @@ func (t *HTTPSTransport) Receive() (*Message, error) {
 	}
 
 	// No buffered responses - flush pending sends and get response
-	if len(t.sendBuf) == 0 {
-		return nil, fmt.Errorf("no pending messages to send")
-	}
+	// For HTTP, we allow empty sendBuf - this triggers a "get refs" request
 
 	// Make HTTP request
 	responses, err := t.doRequest()

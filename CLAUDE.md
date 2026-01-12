@@ -2,6 +2,15 @@
 
 Thread-based version control for conversational coding. Wraps git, treating conversation threads as the primary unit of change.
 
+## Design Principle: Follow Git
+
+Tin follows git's design decisions wherever possible. When implementing a feature, first research how git handles it and mirror that approach unless there's a clear reason not to. This makes tin predictable for users familiar with git and ensures we benefit from git's battle-tested design choices.
+
+Examples:
+- Transport-layer auth (not in wire protocol) - like git
+- Credential storage in global config, not repo config - like git
+- Command structure (`tin remote add`, `tin push`, etc.) - like git
+
 ## Important: Use Tin Commands
 
 **Always use built-in tin commands instead of directly modifying `.tin/` storage on disk.** For example:

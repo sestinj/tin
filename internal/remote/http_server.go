@@ -198,23 +198,24 @@ func (h *HTTPHandler) resolveRepoPath(clientPath string) (string, error) {
 }
 
 func (h *HTTPHandler) handlePush(reqPC, respPC *ProtocolConn, repo *storage.Repository, userID string) {
-	// Send refs advertisement
-	refs, err := buildRefsMessage(repo)
-	if err != nil {
-		respPC.SendError(ErrCodeInternal, "failed to build refs: "+err.Error())
-		return
-	}
+	// HTTP push has two phases:
+	// Phase 1 (refs negotiation): empty request → server sends refs
+	// Phase 2 (actual push): Pack + UpdateRefs → server sends OK
 
-	if err := respPC.Send(MsgRefs, refs); err != nil {
-		log.Printf("[HTTP %s] failed to send refs: %v", userID, err)
-		return
-	}
-
-	// Receive pack from request
+	// Try to receive first message
 	msg, err := reqPC.Receive()
 	if err != nil {
-		log.Printf("[HTTP %s] failed to receive pack: %v", userID, err)
-		respPC.SendError(ErrCodeInvalidRequest, "failed to receive pack")
+		// Empty request body = refs negotiation phase
+		// Send refs so client knows what we have
+		refs, err := buildRefsMessage(repo)
+		if err != nil {
+			respPC.SendError(ErrCodeInternal, "failed to build refs: "+err.Error())
+			return
+		}
+		if err := respPC.Send(MsgRefs, refs); err != nil {
+			log.Printf("[HTTP %s] failed to send refs: %v", userID, err)
+		}
+		log.Printf("[HTTP %s] sent refs (negotiation phase)", userID)
 		return
 	}
 

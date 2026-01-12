@@ -176,34 +176,36 @@ func formatAvailableKeys() string {
 
 // configCredentials handles credential management subcommands
 func configCredentials(args []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	repo, err := storage.Open(cwd)
-	if err != nil {
-		return err
-	}
-
-	credStore := remote.NewCredentialStore(repo.RootPath)
+	credStore := remote.NewCredentialStore()
 
 	if len(args) == 0 {
 		// List credentials
-		return credentialsList(repo)
+		return credentialsList(credStore)
 	}
 
 	switch args[0] {
 	case "add":
 		if len(args) < 3 {
-			return fmt.Errorf("usage: tin config credentials add <host> <token>")
+			return fmt.Errorf("usage: tin config credentials add <host> <username:password>")
 		}
 		host := args[1]
-		token := args[2]
-		if err := credStore.Store(host, token); err != nil {
+		auth := args[2]
+		// Parse username:password
+		var username, password string
+		for i, c := range auth {
+			if c == ':' {
+				username = auth[:i]
+				password = auth[i+1:]
+				break
+			}
+		}
+		if username == "" || password == "" {
+			return fmt.Errorf("credentials must be in format username:password")
+		}
+		if err := credStore.Store(host, username, password); err != nil {
 			return err
 		}
-		fmt.Printf("Stored credentials for %s\n", host)
+		fmt.Printf("Stored credentials for %s (user: %s)\n", host, username)
 		return nil
 
 	case "remove":
@@ -218,38 +220,32 @@ func configCredentials(args []string) error {
 		return nil
 
 	case "list":
-		return credentialsList(repo)
+		return credentialsList(credStore)
 
 	default:
-		return fmt.Errorf("unknown credentials subcommand: %s\n\nUsage:\n  tin config credentials [list]           List stored credentials\n  tin config credentials add <host> <token>  Add credentials for a host\n  tin config credentials remove <host>       Remove credentials for a host", args[0])
+		return fmt.Errorf("unknown credentials subcommand: %s\n\nUsage:\n  tin config credentials [list]              List stored credentials\n  tin config credentials add <host> <user:pass>  Add credentials for a host\n  tin config credentials remove <host>          Remove credentials for a host", args[0])
 	}
 }
 
-func credentialsList(repo *storage.Repository) error {
-	config, err := repo.ReadConfig()
-	if err != nil {
-		return err
-	}
-
-	if len(config.Credentials) == 0 {
+func credentialsList(credStore *remote.CredentialStore) error {
+	entries, err := credStore.List()
+	if err != nil || len(entries) == 0 {
 		fmt.Println("No stored credentials")
-		if config.AuthToken != "" {
-			fmt.Printf("\nLegacy auth_token: %s***\n", config.AuthToken[:min(6, len(config.AuthToken))])
-		}
+		fmt.Printf("\nCredentials are stored in: ~/.config/tin/credentials\n")
 		return nil
 	}
 
 	fmt.Println("Stored credentials:")
-	for _, cred := range config.Credentials {
-		// Mask the token for display
-		maskedToken := cred.Token[:min(6, len(cred.Token))] + "***"
-		fmt.Printf("  %s = %s\n", cred.Host, maskedToken)
+	for _, cred := range entries {
+		// Mask the password for display
+		maskedPass := "***"
+		if len(cred.Password) > 3 {
+			maskedPass = cred.Password[:3] + "***"
+		}
+		fmt.Printf("  %s = %s:%s\n", cred.Host, cred.Username, maskedPass)
 	}
 
-	if config.AuthToken != "" {
-		fmt.Printf("\nLegacy auth_token: %s***\n", config.AuthToken[:min(6, len(config.AuthToken))])
-	}
-
+	fmt.Printf("\nCredentials are stored in: ~/.config/tin/credentials\n")
 	return nil
 }
 
@@ -265,22 +261,23 @@ Commands:
   credentials       Manage per-host credentials (see below)
 
 Credentials Commands:
-  credentials [list]              List stored credentials
-  credentials add <host> <token>  Store credentials for a host
-  credentials remove <host>       Remove credentials for a host
+  credentials [list]                   List stored credentials
+  credentials add <host> <user:pass>   Store credentials for a host
+  credentials remove <host>            Remove credentials for a host
+
+Credentials are stored globally in ~/.config/tin/credentials (not in repo).
 
 Available config keys:
   thread_host_url  Base URL for tin web viewer (e.g., http://localhost:8080)
   code_host_url    URL for code repository (e.g., https://github.com/user/repo)
-  auth_token       Legacy auth token (deprecated, use credentials instead)
 
 Environment Variables:
-  TIN_AUTH_TOKEN   If set, overrides all stored credentials
+  TIN_AUTH   If set (format: user:pass), overrides all stored credentials
 
 Examples:
-  tin config                                      # List all config
-  tin config get thread_host_url                  # Get thread host URL
+  tin config                                           # List all config
+  tin config get thread_host_url                       # Get thread host URL
   tin config set thread_host_url http://localhost:8080
-  tin config credentials add tinhub.dev th_xxxxx  # Store credential for host
-  tin config credentials                          # List stored credentials`)
+  tin config credentials add tinhub.dev alice:secret   # Store credentials
+  tin config credentials                               # List stored credentials`)
 }
