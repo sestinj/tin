@@ -113,6 +113,16 @@ func (h *Handler) handleUserPrompt(repo *storage.Repository, event *agents.HookE
 		}
 	}
 
+	// If no session state, check if there's already a thread for this session ID
+	// (handles case where session state was cleared but thread still exists)
+	if thread == nil {
+		existingThreads, _ := repo.FindThreadsBySessionID(event.SessionID)
+		if len(existingThreads) > 0 {
+			thread = existingThreads[0]
+			oldThreadID = thread.ID
+		}
+	}
+
 	if thread == nil {
 		// Create new thread
 		thread = model.NewThread(agentName, event.SessionID, "", "")
@@ -157,19 +167,33 @@ func (h *Handler) handleUserPrompt(repo *storage.Repository, event *agents.HookE
 }
 
 func (h *Handler) handleStop(repo *storage.Repository, event *agents.HookEvent) (string, error) {
-	state, err := loadSessionState(repo.RootPath, event.SessionID)
-	if err != nil || state == nil {
-		return "", nil // No active session
+	state, _ := loadSessionState(repo.RootPath, event.SessionID)
+
+	var thread *model.Thread
+	var err error
+
+	if state != nil {
+		thread, err = repo.LoadThread(state.ThreadID)
+		if err != nil {
+			thread = nil
+		}
 	}
 
-	thread, err := repo.LoadThread(state.ThreadID)
-	if err != nil {
-		return state.ThreadID, err
+	// If no session state, try to find thread by session ID
+	if thread == nil {
+		existingThreads, _ := repo.FindThreadsBySessionID(event.SessionID)
+		if len(existingThreads) > 0 {
+			thread = existingThreads[0]
+		}
+	}
+
+	if thread == nil {
+		return "", nil // No thread found for this session
 	}
 
 	// Get assistant response from event
 	if event.Response == "" && len(event.ToolCalls) == 0 {
-		return state.ThreadID, nil // No response to record
+		return thread.ID, nil // No response to record
 	}
 
 	// Get current git hash
