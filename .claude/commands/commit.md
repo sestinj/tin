@@ -1,5 +1,5 @@
 ---
-description: Commit the current conversation thread to tin
+description: ALWAYS use this skill for ANY commit operation in this repo. Use proactively when user asks to commit, even without slash command.
 allowed-tools: Bash(tin commit:*), Bash(tin status:*), Bash(tin add:*), Bash(git status:*), Bash(git diff:*)
 argument-hint: [message]
 ---
