@@ -3,8 +3,7 @@
   "name": "tin-marketplace",
   "description": "Thread-based version control for conversational coding. Links AI conversation threads to git commits for code review context.",
   "owner": {
-    "name": "sestinj",
-    "url": "https://github.com/sestinj/tin"
+    "name": "sestinj"
   },
   "plugins": [
     {
@@ -14,7 +13,10 @@
       "author": {
         "name": "sestinj"
       },
-      "source": "./",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/sestinj/tin.git"
+      },
       "category": "productivity",
       "tags": ["git", "version-control", "code-review", "conversations"],
       "homepage": "https://github.com/sestinj/tin"
