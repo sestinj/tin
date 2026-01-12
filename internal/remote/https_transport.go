@@ -206,6 +206,10 @@ func (t *HTTPSTransport) endpointForOperation(operation string) string {
 func (t *HTTPSTransport) parseResponse(r io.Reader) ([]Message, error) {
 	var messages []Message
 	scanner := bufio.NewScanner(r)
+	// Increase buffer size to handle large messages (e.g., packs with many commits/threads)
+	// Default is 64KB, increase to 16MB
+	const maxScannerBuffer = 16 * 1024 * 1024
+	scanner.Buffer(make([]byte, 0, 64*1024), maxScannerBuffer)
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
