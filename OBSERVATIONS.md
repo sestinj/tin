@@ -77,3 +77,24 @@ Question: Should tin support separate git/tin remote names? e.g., `tin push --gi
 ---
 
 When I `tin commit` and then afterward ask a few follow up questions in those same sessions, it causes there to be unstaged threads that feel messy and aren't necessarily related to whatever next commit I make, but they will be bound to be committed along with the next set of changes
+
+---
+
+**Cross-repo work loses thread context**
+
+When working on multiple repos in a single Claude Code session, the conversation thread is tracked in whichever repo the session was started from. For example:
+
+- Session started in `sestinj/tinhub`
+- Made changes to `sestinj/tin` (credential prompting feature)
+- Ran `tin commit` in the tin repo
+- The commit linked to an *unrelated* thread from a previous tin session
+
+The actual conversation explaining *why* the credential prompting was implemented lives in tinhub's `.tin/` directory, not tin's. So the tin commit has no meaningful thread context.
+
+This is a fundamental issue with how tin tracks conversations at the directory level rather than following where work actually happens.
+
+Possible solutions:
+- Support importing/referencing threads from other repos
+- Allow specifying a thread ID manually during commit: `tin commit --thread <id-from-other-repo>`
+- A "cross-repo thread" concept that can be referenced from multiple repos
+- Accept this limitation and document it (current state)
