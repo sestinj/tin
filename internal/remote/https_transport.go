@@ -32,17 +32,26 @@ type HTTPSTransport struct {
 // NewHTTPSTransport creates a new HTTPS transport
 func NewHTTPSTransport(url *ParsedURL, creds *Credentials) (*HTTPSTransport, error) {
 	// Build base URL
+	scheme := url.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+
 	port := url.Port
-	if port == "" || port == "443" {
+	defaultPort := "443"
+	if scheme == "http" {
+		defaultPort = "80"
+	}
+	if port == "" || port == defaultPort {
 		// Don't include default port in URL
 		port = ""
 	}
 
 	var baseURL string
 	if port != "" {
-		baseURL = fmt.Sprintf("https://%s:%s%s", url.Host, port, url.Path)
+		baseURL = fmt.Sprintf("%s://%s:%s%s", scheme, url.Host, port, url.Path)
 	} else {
-		baseURL = fmt.Sprintf("https://%s%s", url.Host, url.Path)
+		baseURL = fmt.Sprintf("%s://%s%s", scheme, url.Host, url.Path)
 	}
 
 	return &HTTPSTransport{

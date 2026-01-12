@@ -23,8 +23,8 @@ type ParsedURL struct {
 // TransportType returns the transport type for this URL
 func (p *ParsedURL) TransportType() string {
 	switch p.Scheme {
-	case "https":
-		return "https"
+	case "https", "http":
+		return "https" // Both use HTTP transport (http is for local dev)
 	default:
 		return "tcp"
 	}
@@ -36,6 +36,7 @@ func (p *ParsedURL) TransportType() string {
 //   - example.com:2323/repos/project.tin
 //   - example.com/repos/project.tin (default port 2323)
 //   - https://tinhub.dev/user/repo
+//   - http://localhost:3000/user/repo
 //   - tin://example.com:2323/repos/project.tin
 func ParseURL(rawURL string) (*ParsedURL, error) {
 	// Handle HTTPS URLs
@@ -50,6 +51,24 @@ func ParseURL(rawURL string) (*ParsedURL, error) {
 		}
 		return &ParsedURL{
 			Scheme: "https",
+			Host:   u.Hostname(),
+			Port:   port,
+			Path:   u.Path,
+		}, nil
+	}
+
+	// Handle HTTP URLs (for local development)
+	if strings.HasPrefix(rawURL, "http://") {
+		u, err := url.Parse(rawURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URL: %w", err)
+		}
+		port := u.Port()
+		if port == "" {
+			port = "80"
+		}
+		return &ParsedURL{
+			Scheme: "http",
 			Host:   u.Hostname(),
 			Port:   port,
 			Path:   u.Path,

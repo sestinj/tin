@@ -65,9 +65,9 @@ func Pull(args []string) error {
 			return err
 		}
 
-		// Get credentials from store
+		// Get credentials from store (use Address() for host:port format)
 		credStore := remote.NewCredentialStore()
-		creds, _ := credStore.Get(parsedURL.Host)
+		creds, _ := credStore.Get(parsedURL.Address())
 
 		// Connect to remote with credentials
 		client, err := remote.Dial(remoteConfig.URL, creds)
