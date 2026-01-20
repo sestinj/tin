@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/dadlerj/tin/internal/git"
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/git"
+	"github.com/sestinj/tin/internal/model"
 )
 
 //go:embed templates/*.html

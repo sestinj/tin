@@ -3,8 +3,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/dadlerj/tin/internal/model"
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/model"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 func TestCommit_Success(t *testing.T) {

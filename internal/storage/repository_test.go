@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 func TestInit(t *testing.T) {

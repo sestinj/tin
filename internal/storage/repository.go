@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 const (

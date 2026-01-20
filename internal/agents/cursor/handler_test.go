@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dadlerj/tin/internal/agents"
+	"github.com/sestinj/tin/internal/agents"
 )
 
 func TestHandler_Info(t *testing.T) {

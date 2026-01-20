@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 func TestRepository_SaveAndLoadCommit(t *testing.T) {

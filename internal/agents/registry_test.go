@@ -3,7 +3,7 @@ package agents
 import (
 	"testing"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 // Mock implementations for testing

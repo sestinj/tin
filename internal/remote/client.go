@@ -3,8 +3,8 @@ package remote
 import (
 	"fmt"
 
-	"github.com/dadlerj/tin/internal/model"
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/model"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 // Client handles connections to remote tin servers

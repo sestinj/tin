@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 func Pull(args []string) error {

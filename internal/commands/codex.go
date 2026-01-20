@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dadlerj/tin/internal/agents"
-	_ "github.com/dadlerj/tin/internal/agents/codex" // Register agent
+	"github.com/sestinj/tin/internal/agents"
+	_ "github.com/sestinj/tin/internal/agents/codex" // Register agent
 )
 
 // Codex handles the "tin codex" command

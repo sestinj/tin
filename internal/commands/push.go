@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/git"
-	"github.com/dadlerj/tin/internal/remote"
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/git"
+	"github.com/sestinj/tin/internal/remote"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 func Push(args []string) error {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 func Remote(args []string) error {

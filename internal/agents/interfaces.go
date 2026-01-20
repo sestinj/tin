@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 // AgentInfo contains metadata about an agent integration

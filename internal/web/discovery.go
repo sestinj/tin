@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 // RepoInfo contains metadata about a discovered tin repository

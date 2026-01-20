@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/dadlerj/tin/internal/agents"
-	_ "github.com/dadlerj/tin/internal/agents/claudecode" // Register agent
-	"github.com/dadlerj/tin/internal/agents/codex"
-	_ "github.com/dadlerj/tin/internal/agents/cursor" // Register agent
-	"github.com/dadlerj/tin/internal/hooks"
+	"github.com/sestinj/tin/internal/agents"
+	_ "github.com/sestinj/tin/internal/agents/claudecode" // Register agent
+	"github.com/sestinj/tin/internal/agents/codex"
+	_ "github.com/sestinj/tin/internal/agents/cursor" // Register agent
+	"github.com/sestinj/tin/internal/hooks"
 )
 
 func Hooks(args []string) error {

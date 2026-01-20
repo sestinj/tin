@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/remote"
-	"github.com/dadlerj/tin/internal/web"
+	"github.com/sestinj/tin/internal/remote"
+	"github.com/sestinj/tin/internal/web"
 )
 
 func Serve(args []string) error {

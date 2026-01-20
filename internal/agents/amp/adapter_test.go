@@ -3,8 +3,8 @@ package amp
 import (
 	"testing"
 
-	"github.com/dadlerj/tin/internal/agents"
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/agents"
+	"github.com/sestinj/tin/internal/model"
 )
 
 func TestAdapter_Info(t *testing.T) {

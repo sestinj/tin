@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 func Log(args []string) error {

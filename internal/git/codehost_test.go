@@ -27,14 +27,14 @@ func TestParseGitRemoteURL(t *testing.T) {
 		},
 		{
 			name:      "HTTPS format with .git",
-			url:       "https://github.com/dadlerj/tin.git",
+			url:       "https://github.com/sestinj/tin.git",
 			wantHost:  "github.com",
 			wantOwner: "dadlerj",
 			wantRepo:  "tin",
 		},
 		{
 			name:      "HTTPS format without .git",
-			url:       "https://github.com/dadlerj/tin",
+			url:       "https://github.com/sestinj/tin",
 			wantHost:  "github.com",
 			wantOwner: "dadlerj",
 			wantRepo:  "tin",
@@ -87,7 +87,7 @@ func TestCodeHostURL_CommitURL(t *testing.T) {
 			name:     "GitHub commit URL",
 			codeHost: &CodeHostURL{Host: "github.com", Owner: "dadlerj", Repo: "tin"},
 			hash:     "abc123",
-			want:     "https://github.com/dadlerj/tin/commit/abc123",
+			want:     "https://github.com/sestinj/tin/commit/abc123",
 		},
 		{
 			name:     "non-GitHub host returns empty",

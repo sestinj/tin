@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dadlerj/tin/internal/model"
+	"github.com/sestinj/tin/internal/model"
 )
 
 // Protocol version

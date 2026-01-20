@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dadlerj/tin/internal/agents"
-	"github.com/dadlerj/tin/internal/model"
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/agents"
+	"github.com/sestinj/tin/internal/model"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/remote"
-	"github.com/dadlerj/tin/internal/storage"
+	"github.com/sestinj/tin/internal/remote"
+	"github.com/sestinj/tin/internal/storage"
 )
 
 // Known config keys with descriptions

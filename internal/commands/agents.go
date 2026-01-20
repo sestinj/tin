@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dadlerj/tin/internal/agents"
+	"github.com/sestinj/tin/internal/agents"
 	// Import agent packages to trigger their init() registration
-	_ "github.com/dadlerj/tin/internal/agents/amp"
-	_ "github.com/dadlerj/tin/internal/agents/claudecode"
-	_ "github.com/dadlerj/tin/internal/agents/codex"
-	_ "github.com/dadlerj/tin/internal/agents/cursor"
+	_ "github.com/sestinj/tin/internal/agents/amp"
+	_ "github.com/sestinj/tin/internal/agents/claudecode"
+	_ "github.com/sestinj/tin/internal/agents/codex"
+	_ "github.com/sestinj/tin/internal/agents/cursor"
 )
 
 // Agents handles the "tin agents" command
