@@ -630,12 +630,25 @@ func (r *Repository) GetThreadHostURL() string {
 // deriveThreadHostURL converts a tin remote URL to a web viewer base URL
 // Example: "localhost:2323/myproject.tin" -> "http://localhost:2323"
 // Example: "tin.example.com:2323/repos/project.tin" -> "https://tin.example.com:2323"
+// Example: "https://tinhub.dev/owner/repo" -> "https://tinhub.dev"
 func deriveThreadHostURL(remoteURL string) string {
 	// Handle tin:// scheme
 	if strings.HasPrefix(remoteURL, "tin://") {
 		remoteURL = strings.TrimPrefix(remoteURL, "tin://")
 	}
 
+	// Handle https:// or http:// scheme (already has scheme)
+	if strings.HasPrefix(remoteURL, "https://") || strings.HasPrefix(remoteURL, "http://") {
+		// Find the path separator after the scheme
+		schemeEnd := strings.Index(remoteURL, "://") + 3
+		slashIdx := strings.Index(remoteURL[schemeEnd:], "/")
+		if slashIdx == -1 {
+			return strings.TrimSuffix(remoteURL, "/")
+		}
+		return remoteURL[:schemeEnd+slashIdx]
+	}
+
+	// No scheme - need to add one
 	// Find the path separator to get host:port
 	slashIdx := strings.Index(remoteURL, "/")
 	if slashIdx == -1 {
@@ -672,7 +685,7 @@ func (r *Repository) BuildCommitURL(commitID string) string {
 		return ""
 	}
 
-	return fmt.Sprintf("%s/repo/%s/commit/%s", baseURL, repoPath, commitID)
+	return fmt.Sprintf("%s/%s/commit/%s", baseURL, repoPath, commitID)
 }
 
 // BuildThreadURL constructs a URL to view a thread in the web viewer.
@@ -694,7 +707,7 @@ func (r *Repository) BuildThreadURL(threadID, contentHash string) string {
 		return ""
 	}
 
-	url := fmt.Sprintf("%s/repo/%s/thread/%s", baseURL, repoPath, threadID)
+	url := fmt.Sprintf("%s/%s/thread/%s", baseURL, repoPath, threadID)
 	if contentHash != "" {
 		url += "?version=" + contentHash
 	}
@@ -703,10 +716,22 @@ func (r *Repository) BuildThreadURL(threadID, contentHash string) string {
 
 // extractRepoPath gets the repository path from a remote URL
 // Example: "localhost:2323/myproject.tin" -> "myproject.tin"
+// Example: "https://tinhub.dev/owner/repo" -> "owner/repo"
 func extractRepoPath(remoteURL string) string {
 	// Handle tin:// scheme
 	if strings.HasPrefix(remoteURL, "tin://") {
 		remoteURL = strings.TrimPrefix(remoteURL, "tin://")
+	}
+
+	// Handle https:// or http:// scheme
+	if strings.HasPrefix(remoteURL, "https://") || strings.HasPrefix(remoteURL, "http://") {
+		schemeEnd := strings.Index(remoteURL, "://") + 3
+		slashIdx := strings.Index(remoteURL[schemeEnd:], "/")
+		if slashIdx == -1 {
+			return ""
+		}
+		path := remoteURL[schemeEnd+slashIdx+1:]
+		return strings.TrimPrefix(path, "/")
 	}
 
 	// Find the path after host:port
