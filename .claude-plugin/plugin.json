@@ -4,5 +4,7 @@
   "description": "Thread-based version control for conversational coding. Links AI conversation threads to git commits for code review context.",
   "author": {
     "name": "sestinj"
-  }
+  },
+  "skills": "./skills/",
+  "commands": "./.claude/commands/"
 }
