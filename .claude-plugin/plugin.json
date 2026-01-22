@@ -1,6 +1,6 @@
 {
   "name": "tin",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Thread-based version control for conversational coding. Links AI conversation threads to git commits for code review context.",
   "author": {
     "name": "sestinj"

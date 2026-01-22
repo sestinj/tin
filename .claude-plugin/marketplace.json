@@ -9,7 +9,7 @@
     {
       "name": "tin",
       "description": "Thread-based version control for conversational coding. Wraps git to link AI conversation threads to commits, giving PR reviewers full context on why changes were made.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "sestinj"
       },
