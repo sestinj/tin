@@ -95,9 +95,6 @@ func hooksInstall(args []string) error {
 			if err := hooks.InstallClaudeCodeHooks(cwd, global); err != nil {
 				return err
 			}
-			if err := hooks.InstallSlashCommands(cwd, global); err != nil {
-				return err
-			}
 			fmt.Printf("Installed tin hooks for Claude Code (%s)\n", location)
 
 		case "cursor":
@@ -117,12 +114,8 @@ func hooksInstall(args []string) error {
 	fmt.Println("  - UserPromptSubmit: Records human messages")
 	fmt.Println("  - Stop: Records assistant responses and tool calls")
 	fmt.Println("  - SessionEnd: Marks thread as complete")
-	fmt.Println("\nSlash commands installed (Claude Code only):")
-	fmt.Println("  - /branches: List all branches (current marked with *)")
-	fmt.Println("  - /commit [message]: Commit staged threads")
-	fmt.Println("  - /checkout [branch]: Switch to another branch")
 	fmt.Println("\nThreads will be auto-staged as you work.")
-	fmt.Println("Use '/commit' or 'tin commit -m \"message\"' to commit your work.")
+	fmt.Println("Use 'tin commit -m \"message\"' to commit your work.")
 
 	return nil
 }
@@ -148,15 +141,11 @@ func hooksUninstall(args []string) error {
 		return err
 	}
 
-	if err := hooks.UninstallSlashCommands(cwd, global); err != nil {
-		return err
-	}
-
 	location := "project"
 	if global {
 		location = "global"
 	}
-	fmt.Printf("Uninstalled tin hooks and slash commands from Claude Code (%s)\n", location)
+	fmt.Printf("Uninstalled tin hooks from Claude Code (%s)\n", location)
 
 	return nil
 }
