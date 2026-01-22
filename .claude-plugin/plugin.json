@@ -5,6 +5,5 @@
   "author": {
     "name": "sestinj"
   },
-  "skills": "./skills/",
-  "commands": "./.claude/commands/"
+  "skills": "./skills/"
 }
