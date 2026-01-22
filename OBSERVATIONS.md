@@ -98,3 +98,31 @@ Possible solutions:
 - Allow specifying a thread ID manually during commit: `tin commit --thread <id-from-other-repo>`
 - A "cross-repo thread" concept that can be referenced from multiple repos
 - Accept this limitation and document it (current state)
+
+---
+
+**`tin sync` error message didn't show `--tin-follows-git` option**
+
+User scenario:
+```bash
+tin commit -m "WIP on tasks page"
+# Error: tin branch 'main' does not match git branch 'nate/tasks-page-update'
+
+tin sync
+# Error: cannot switch git branch due to uncommitted changes
+```
+
+The issue: `tin sync` defaults to "git follows tin" which tries to switch the working tree via `git checkout`. When this fails due to uncommitted changes, the error message didn't mention that `--tin-follows-git` flag exists.
+
+User insight: "Why couldn't tin sync just change only the tin branch?"
+
+The answer: It can! `tin sync --tin-follows-git` does exactly this—updates tin's branch pointer without touching git. But:
+1. This wasn't mentioned in the error message
+2. The functionality existed but wasn't discoverable
+
+**Fixed**: Improved error message in `internal/commands/sync.go` to detect uncommitted changes errors and show all available options:
+1. `tin sync --tin-follows-git` (safe, just updates pointer)
+2. Stash/commit changes first
+3. `tin commit --force` to proceed on mismatched branches
+
+The improved error now guides users to the right solution instead of leaving them stuck.

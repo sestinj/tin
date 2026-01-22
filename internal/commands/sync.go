@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sestinj/tin/internal/storage"
 )
@@ -96,6 +97,18 @@ func Sync(args []string) error {
 		}
 
 		if err := repo.GitCheckoutBranch(state.TinBranch); err != nil {
+			// Check if this is due to uncommitted changes
+			errMsg := err.Error()
+			if containsUncommittedChangesError(errMsg) {
+				return fmt.Errorf(`cannot sync - git checkout would overwrite uncommitted changes
+
+Your options:
+  1. tin sync --tin-follows-git    # Just update tin to match git (safe, no working tree changes)
+  2. git stash && tin sync          # Stash changes, sync, then unstash
+  3. tin commit --force             # Commit on mismatched branches
+
+Original error: %v`, err)
+			}
 			return fmt.Errorf("failed to switch git branch: %w", err)
 		}
 		fmt.Printf("Switched git to '%s'\n", state.TinBranch)
@@ -103,6 +116,22 @@ func Sync(args []string) error {
 
 	fmt.Println("\nNow in sync!")
 	return nil
+}
+
+// containsUncommittedChangesError checks if an error message indicates
+// that git checkout failed due to uncommitted changes
+func containsUncommittedChangesError(errMsg string) bool {
+	indicators := []string{
+		"would be overwritten",
+		"Your local changes",
+		"Please commit your changes or stash them",
+	}
+	for _, indicator := range indicators {
+		if strings.Contains(errMsg, indicator) {
+			return true
+		}
+	}
+	return false
 }
 
 func printSyncHelp() {
