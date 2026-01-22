@@ -3,13 +3,9 @@
   "remotes": [
     {
       "name": "origin",
-      "url": "https://tinhub.dev:8443/nate/tin"
-    },
-    {
-      "name": "local",
-      "url": "http://localhost:3000/sestinj/tin"
+      "url": "https://tinhub.dev/eab5d7ef-8c27-4be7-a5f7-2ead5173b286/tin"
     }
   ],
   "code_host_url": "https://github.com/sestinj/tin",
-  "thread_host_url": "https://tinhub.dev:8443/sestinj/tin"
+  "thread_host_url": "https://tinhub.dev/eab5d7ef-8c27-4be7-a5f7-2ead5173b286/tin"
 }
