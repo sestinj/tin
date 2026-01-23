@@ -88,6 +88,16 @@ Threads are deduplicated by Amp thread ID (stored in `AgentSessionID`).
 go build -o tin ./cmd/tin
 ```
 
+## Repository & Pull Requests
+
+**IMPORTANT:** This repository (`sestinj/tin`) is the primary development repository. When creating pull requests, ALWAYS use:
+
+```bash
+gh pr create --repo sestinj/tin ...
+```
+
+**Never create PRs to upstream repositories.** The git remote `origin` points to `sestinj/tin`, which is where all PRs should be submitted.
+
 ## Feedback: Test Driving Tin
 
 We are test driving `tin`, which means it is really important to collect feedback on how it works in real-world situations, and whether the workflow is ergonomic. Log observations to `OBSERVATIONS.md` whenever you encounter:
