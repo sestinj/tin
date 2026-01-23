@@ -226,3 +226,91 @@ func TestRepository_GetCurrentGitHash_EmptyRepo(t *testing.T) {
 	// In an empty repo with no commits, this returns empty string
 	_ = hash // No assertion on value since it depends on git state
 }
+
+func TestOpen_Worktree(t *testing.T) {
+	// Create a main repo with tin initialized
+	mainDir := t.TempDir()
+	_, err := Init(mainDir)
+	if err != nil {
+		t.Fatalf("Init main repo failed: %v", err)
+	}
+
+	// Create a fake worktree directory
+	worktreeDir := t.TempDir()
+
+	// Create a .git file that points to a fake worktree path
+	// Format: gitdir: /path/to/main/.git/worktrees/test-branch
+	gitFileContent := "gitdir: " + filepath.Join(mainDir, ".git", "worktrees", "test-branch")
+	gitFilePath := filepath.Join(worktreeDir, ".git")
+	if err := os.WriteFile(gitFilePath, []byte(gitFileContent), 0644); err != nil {
+		t.Fatalf("failed to create .git file: %v", err)
+	}
+
+	// Open from worktree should find and use main repo's .tin
+	repo, err := Open(worktreeDir)
+	if err != nil {
+		t.Fatalf("Open from worktree failed: %v", err)
+	}
+
+	// RootPath should be the worktree directory
+	if repo.RootPath != worktreeDir {
+		t.Errorf("expected root path %s, got %s", worktreeDir, repo.RootPath)
+	}
+
+	// TinPath should point to main repo's .tin
+	expectedTinPath := filepath.Join(mainDir, ".tin")
+	if repo.TinPath != expectedTinPath {
+		t.Errorf("expected tin path %s, got %s", expectedTinPath, repo.TinPath)
+	}
+
+	// Should be able to read HEAD from shared .tin
+	head, err := repo.ReadHead()
+	if err != nil {
+		t.Fatalf("ReadHead from worktree failed: %v", err)
+	}
+	if head != "main" {
+		t.Errorf("expected HEAD 'main', got %s", head)
+	}
+}
+
+func TestInit_Worktree_ExistingTin(t *testing.T) {
+	// Create a main repo with tin initialized
+	mainDir := t.TempDir()
+	_, err := Init(mainDir)
+	if err != nil {
+		t.Fatalf("Init main repo failed: %v", err)
+	}
+
+	// Create a fake worktree directory
+	worktreeDir := t.TempDir()
+
+	// Create a .git file that points to the main repo
+	gitFileContent := "gitdir: " + filepath.Join(mainDir, ".git", "worktrees", "test-branch")
+	gitFilePath := filepath.Join(worktreeDir, ".git")
+	if err := os.WriteFile(gitFilePath, []byte(gitFileContent), 0644); err != nil {
+		t.Fatalf("failed to create .git file: %v", err)
+	}
+
+	// Init from worktree should use main repo's .tin (not create a new one)
+	repo, err := Init(worktreeDir)
+	if err != nil {
+		t.Fatalf("Init from worktree failed: %v", err)
+	}
+
+	// RootPath should be the worktree directory
+	if repo.RootPath != worktreeDir {
+		t.Errorf("expected root path %s, got %s", worktreeDir, repo.RootPath)
+	}
+
+	// TinPath should point to main repo's .tin
+	expectedTinPath := filepath.Join(mainDir, ".tin")
+	if repo.TinPath != expectedTinPath {
+		t.Errorf("expected tin path %s, got %s", expectedTinPath, repo.TinPath)
+	}
+
+	// Verify no .tin was created in worktree
+	worktreeTinPath := filepath.Join(worktreeDir, ".tin")
+	if _, err := os.Stat(worktreeTinPath); !os.IsNotExist(err) {
+		t.Error("expected no .tin in worktree, but it exists")
+	}
+}

@@ -126,3 +126,29 @@ The answer: It can! `tin sync --tin-follows-git` does exactly this—updates tin
 3. `tin commit --force` to proceed on mismatched branches
 
 The improved error now guides users to the right solution instead of leaving them stuck.
+
+---
+
+**Tin doesn't handle git worktrees** ✅ FIXED
+
+Git worktrees allow working on multiple branches simultaneously by creating separate working directories that share the same `.git` (via a `.git` file pointing to the main repo's `.git` directory). However, tin was treating each worktree as completely independent.
+
+Problem:
+1. `.tin/` directory exists in main repo (not version controlled)
+2. Create a git worktree → no `.tin/` directory in worktree
+3. Try to `tin commit` in worktree → error: "need to run tin init"
+
+Expected behavior: Tin should detect it's in a git worktree and either:
+- Share the `.tin/` directory with the main repo (like git shares `.git/`)
+- Auto-detect worktree and initialize appropriately
+- Give a helpful error explaining the worktree situation
+
+Git's approach: The `.git` file in a worktree contains `gitdir: /path/to/main/.git/worktrees/<name>`, allowing git commands to work seamlessly across all worktrees.
+
+**Solution implemented:**
+- `storage.Open()` now detects when `.git` is a file (not directory), parses it to find the main repo, and uses the main repo's `.tin` directory
+- `storage.Init()` similarly detects worktrees - if main repo has tin, it uses that; if not, it initializes tin in the main repo (not the worktree)
+- Repository struct keeps `RootPath` as the worktree directory (for git operations) and `TinPath` pointing to the shared `.tin`
+- Added comprehensive tests: `TestOpen_Worktree` and `TestInit_Worktree_ExistingTin`
+
+Now tin seamlessly shares state across worktrees just like git does.

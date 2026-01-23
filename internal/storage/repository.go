@@ -73,8 +73,34 @@ func Init(path string) (*Repository, error) {
 		return nil, ErrAlreadyExists
 	}
 
-	// Ensure git is initialized
+	// Check if we're in a git worktree with existing tin in main repo
 	gitPath := filepath.Join(path, ".git")
+	if info, err := os.Stat(gitPath); err == nil && !info.IsDir() {
+		// This is a worktree - check if main repo has .tin
+		data, err := os.ReadFile(gitPath)
+		if err == nil {
+			content := strings.TrimSpace(string(data))
+			if strings.HasPrefix(content, "gitdir: ") {
+				gitdir := strings.TrimPrefix(content, "gitdir: ")
+				if idx := strings.Index(gitdir, "/.git/worktrees/"); idx != -1 {
+					mainRepoPath := gitdir[:idx]
+					mainTinPath := filepath.Join(mainRepoPath, TinDir)
+					if _, err := os.Stat(mainTinPath); err == nil {
+						// Main repo already has tin - use that
+						return &Repository{
+							RootPath: path,
+							TinPath:  mainTinPath,
+						}, nil
+					}
+					// Main repo doesn't have tin - we'll initialize there
+					tinPath = mainTinPath
+					path = mainRepoPath
+				}
+			}
+		}
+	}
+
+	// Ensure git is initialized
 	if _, err := os.Stat(gitPath); os.IsNotExist(err) {
 		cmd := exec.Command("git", "init")
 		cmd.Dir = path
@@ -134,6 +160,34 @@ func Open(path string) (*Repository, error) {
 				RootPath: current,
 				TinPath:  tinPath,
 			}, nil
+		}
+
+		// Check if we're in a git worktree
+		// In worktrees, .git is a file containing "gitdir: /path/to/main/.git/worktrees/<name>"
+		gitPath := filepath.Join(current, ".git")
+		if info, err := os.Stat(gitPath); err == nil && !info.IsDir() {
+			// Read the .git file to find the main worktree
+			data, err := os.ReadFile(gitPath)
+			if err == nil {
+				// Parse "gitdir: /path/to/.git/worktrees/<name>"
+				content := strings.TrimSpace(string(data))
+				if strings.HasPrefix(content, "gitdir: ") {
+					gitdir := strings.TrimPrefix(content, "gitdir: ")
+					// Extract main repo path: /path/to/.git/worktrees/<name> -> /path/to
+					if idx := strings.Index(gitdir, "/.git/worktrees/"); idx != -1 {
+						mainRepoPath := gitdir[:idx]
+						// Check if .tin exists in the main repo
+						mainTinPath := filepath.Join(mainRepoPath, TinDir)
+						if _, err := os.Stat(mainTinPath); err == nil {
+							// Use main repo's .tin but keep current path as RootPath for git operations
+							return &Repository{
+								RootPath: current,
+								TinPath:  mainTinPath,
+							}, nil
+						}
+					}
+				}
+			}
 		}
 
 		parent := filepath.Dir(current)
